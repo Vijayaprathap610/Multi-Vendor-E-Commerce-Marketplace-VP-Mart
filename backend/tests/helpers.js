@@ -7,31 +7,74 @@ process.env.BCRYPT_ROUNDS = '4';
 process.env.MAX_FAILED_LOGINS = '3';
 process.env.AUTH_RATE_LIMIT_MAX = '1000';
 process.env.MAIL_TRANSPORT = 'outbox';
+process.env.REDIS_URL = 'redis://127.0.0.1:6379/15';
+process.env.STORAGE_DRIVER = 'local';
+process.env.UPLOAD_DIR = `/tmp/vpmart_uploads_${process.pid}`;
+process.env.PUBLIC_API_URL = 'http://localhost:5000';
+process.env.DELIVERY_HOLIDAYS = '2026-11-12';
 
 const { default: request } = await import('supertest');
 const { default: mongoose } = await import('mongoose');
 const { createApp } = await import('../src/app.js');
 const { connectDb, disconnectDb } = await import('../src/config/db.js');
-const { default: User } = await import('../src/models/User.js');
-const { default: Session } = await import('../src/models/Session.js');
-const { default: AuditLog } = await import('../src/models/AuditLog.js');
+const models = await import('../src/models/index.js');
+const { User, Session, AuditLog, allModels } = models;
+const { flushForTests, closeRedis } = await import('../src/services/cache.js');
+const { seedCategories } = await import('../src/services/seedCatalog.js');
+const fsp = await import('node:fs/promises');
+const sharp = (await import('sharp')).default;
+const { createListing } = await import('../src/services/listingService.js');
 const { hashPassword } = await import('../src/services/userService.js');
 
-export { mongoose, User, Session, AuditLog, createApp };
+export { mongoose, User, Session, AuditLog, createApp, models, seedCategories };
 export const PASSWORD = 'Sup3rSecret99';
+export const makePng = (w = 64, h = 64, color = '#d62839') =>
+  sharp({ create: { width: w, height: h, channels: 3, background: color } })
+    .png()
+    .toBuffer();
+
+export async function catByName(name) {
+  return models.Category.findOne({ name });
+}
+
+// Creates a listing through the real service (same validation, compliance and visibility rules).
+export async function makeListing(vendor, over = {}) {
+  const cat = over.category ?? (await catByName('Fashion'));
+  const n = Math.random().toString(36).slice(2, 7);
+  const { category: _c, ...rest } = over;
+  return createListing(vendor, {
+    product: {
+      name: rest.name ?? `Cotton Shirt ${n}`,
+      brand: { name: rest.brand ?? 'Acme' },
+      categoryId: String(cat._id),
+      ...(rest.product ?? {}),
+    },
+    sku: rest.sku ?? `SKU-${n}`,
+    pricePaise: rest.pricePaise ?? 50000,
+    mrpPaise: rest.mrpPaise ?? 60000,
+    stock: rest.stock ?? 10,
+    images: [],
+    ...(rest.extra ?? {}),
+  });
+}
 
 export async function setupDb() {
   await connectDb();
-  await Promise.all([User, Session, AuditLog].map((m) => m.init()));
+  await Promise.all(allModels.map((m) => m.init()));
+  await flushForTests();
 }
 
 export async function teardownDb() {
   await mongoose.connection.dropDatabase();
+  await flushForTests();
+  await closeRedis();
   await disconnectDb();
+  await fsp.rm(process.env.UPLOAD_DIR, { recursive: true, force: true });
 }
 
 export async function resetDb() {
-  await Promise.all([User.deleteMany({}), Session.deleteMany({}), AuditLog.deleteMany({})]);
+  await Promise.all(allModels.map((m) => m.deleteMany({})));
+  await flushForTests();
 }
 
 export async function makeUser(overrides = {}) {
@@ -84,9 +127,52 @@ export class Client {
     }
     return undefined;
   }
+  async upload(url, buffer, filename = 'x.png') {
+    if (!this.csrf) this.track(await this.agent.get('/api/auth/csrf'));
+    return this.track(
+      await this.agent.post(url).set('x-csrf-token', this.csrf).attach('image', buffer, filename),
+    );
+  }
+  put = (u, b, o) => this.call('put', u, b ?? {}, o);
+  del = (u) => this.call('delete', u, undefined);
   async login(email, password = PASSWORD) {
     return this.post('/api/auth/login', { email, password });
   }
+}
+
+export async function makeVendor({
+  approved = true,
+  profile = true,
+  shop = 'Test Shop',
+  ...over
+} = {}) {
+  const u = await makeUser({
+    role: 'vendor',
+    status: approved ? 'active' : 'pending_approval',
+    ...over,
+  });
+  if (profile) {
+    await models.VendorProfile.create({
+      userId: u._id,
+      shopName: shop,
+      slug:
+        shop.toLowerCase().replace(/[^a-z0-9]+/g, '-') +
+        '-' +
+        Math.random().toString(36).slice(2, 5),
+      businessName: `${shop} Traders`,
+      fssaiLicense: '12345678901234',
+      drugLicense: 'DL-TN-12345',
+      pickupAddress: {
+        line1: '1 Market Rd',
+        city: 'Coimbatore',
+        state: 'Tamil Nadu',
+        pincode: '641001',
+      },
+      payout: { accountHolder: 'Test Owner', accountLast4: '1234', ifsc: 'HDFC0001234' },
+      submittedAt: new Date(),
+    });
+  }
+  return u;
 }
 
 export const newClient = (app) => new Client(app);

@@ -6,6 +6,7 @@ import {
   User,
   createApp,
   makeUser,
+  makeVendor,
   newClient,
   resetDb,
   setupDb,
@@ -74,7 +75,7 @@ describe('role-based access control (enforced on the backend)', () => {
 describe('admin account approval and suspension', () => {
   it('approves a pending vendor and writes an audit entry', async () => {
     const { c, u: admin } = await asRole('admin');
-    const vendor = await makeUser({ role: 'vendor', status: 'pending_approval' });
+    const vendor = await makeVendor({ approved: false });
     const res = await c.patch(`/api/admin/users/${vendor._id}/status`, { status: 'active' });
     assert.equal(res.status, 200);
     assert.equal((await User.findById(vendor._id)).status, 'active');
@@ -84,6 +85,15 @@ describe('admin account approval and suspension', () => {
     });
     assert.equal(String(log.actorId), String(admin._id));
     assert.equal(log.metadata.to, 'active');
+  });
+
+  it('refuses to approve a vendor who has not submitted a shop profile', async () => {
+    const { c } = await asRole('admin');
+    const vendor = await makeVendor({ approved: false, profile: false });
+    const res = await c.patch(`/api/admin/users/${vendor._id}/status`, { status: 'active' });
+    assert.equal(res.status, 409);
+    assert.equal(res.body.error.code, 'PROFILE_NOT_SUBMITTED');
+    assert.equal((await User.findById(vendor._id)).status, 'pending_approval');
   });
 
   it('suspension kills the target’s live session immediately', async () => {

@@ -6,6 +6,9 @@ export default [
   js.configs.recommended,
   {
     languageOptions: { ecmaVersion: 2024, sourceType: 'module', globals: { ...globals.node } },
-    rules: { 'no-unused-vars': ['error', { argsIgnorePattern: '^_' }], eqeqeq: 'error' },
+    rules: {
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true }],
+      eqeqeq: ['error', 'always', { null: 'ignore' }],
+    },
   },
 ];

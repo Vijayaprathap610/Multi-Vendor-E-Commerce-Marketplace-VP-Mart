@@ -82,7 +82,7 @@ export async function rotateRefreshToken(oldToken) {
         expiresAt: new Date(now.getTime() + env.REFRESH_TOKEN_TTL_DAYS * 86400 * 1000),
       },
     },
-    { new: true },
+    { returnDocument: 'after' },
   );
   if (session) return { session, refreshToken: newToken };
 

@@ -29,6 +29,22 @@ const schema = z.object({
   SMTP_PORT: z.coerce.number().int().optional(),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
+  PUBLIC_API_URL: z.string().url().default('http://localhost:5000'),
+  REDIS_URL: z.string().default('redis://127.0.0.1:6379'),
+  ELASTICSEARCH_URL: z.string().url().optional(),
+  ELASTICSEARCH_API_KEY: z.string().optional(),
+  ES_INDEX: z.string().default('vpmart_listings'),
+  STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
+  UPLOAD_DIR: z.string().default('./uploads'),
+  S3_BUCKET: z.string().optional(),
+  S3_REGION: z.string().optional(),
+  S3_PUBLIC_BASE_URL: z.string().url().optional(),
+  TAX_MODE: z.enum(['inclusive', 'exclusive']).default('inclusive'),
+  DELIVERY_HOLIDAYS: z.string().default(''),
+  SOCIAL_FACEBOOK: z.string().url().optional(),
+  SOCIAL_INSTAGRAM: z.string().url().optional(),
+  SOCIAL_X: z.string().url().optional(),
+  SOCIAL_YOUTUBE: z.string().url().optional(),
   ADMIN_EMAIL: z.string().email().optional(),
   ADMIN_PASSWORD: z.string().optional(),
   ADMIN_NAME: z.string().default('VP Mart Admin'),
@@ -41,6 +57,12 @@ if (!parsed.success) {
 }
 
 const env = parsed.data;
+
+if (env.STORAGE_DRIVER === 's3' && !(env.S3_BUCKET && env.S3_REGION && env.S3_PUBLIC_BASE_URL)) {
+  throw new Error(
+    'S3_BUCKET, S3_REGION and S3_PUBLIC_BASE_URL are required when STORAGE_DRIVER=s3',
+  );
+}
 
 if (env.NODE_ENV === 'production') {
   if (!env.COOKIE_SECURE) throw new Error('COOKIE_SECURE must be true in production');

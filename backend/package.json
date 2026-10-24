@@ -15,9 +15,16 @@
     "lint": "eslint .",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
-    "audit": "npm audit --omit=dev"
+    "audit": "npm audit --omit=dev",
+    "seed:catalog": "node src/scripts/seedCatalog.js",
+    "seed:demo": "node src/scripts/seedDemo.js",
+    "import:fakestore": "node src/scripts/importFakeStore.js",
+    "search:reindex": "node src/scripts/reindexSearch.js",
+    "media:cleanup": "node src/scripts/cleanupMedia.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1156.0",
+    "@elastic/elasticsearch": "^9.5.1",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
@@ -25,11 +32,14 @@
     "express": "^5.3.0",
     "express-rate-limit": "^8.7.1",
     "helmet": "^8.3.0",
+    "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.11.4",
+    "multer": "^2.5.0",
     "nodemailer": "^10.2.1",
     "pino": "^10.4.0",
     "pino-http": "^11.0.0",
+    "sharp": "^0.35.5",
     "zod": "^4.6.7"
   },
   "devDependencies": {

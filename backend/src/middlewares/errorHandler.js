@@ -1,4 +1,5 @@
 import { ZodError } from 'zod';
+import multer from 'multer';
 import env from '../config/env.js';
 import { AppError } from '../utils/AppError.js';
 import { logger } from '../utils/logger.js';
@@ -35,6 +36,10 @@ export function errorHandler(err, req, res, _next) {
     status = 400;
     code = 'BAD_JSON';
     message = 'Malformed JSON body';
+  } else if (err instanceof multer.MulterError) {
+    status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+    code = err.code === 'LIMIT_FILE_SIZE' ? 'FILE_TOO_LARGE' : 'UPLOAD_ERROR';
+    message = err.code === 'LIMIT_FILE_SIZE' ? 'Image is too large (max 5 MB)' : 'Invalid upload';
   } else if (err?.type === 'entity.too.large') {
     status = 413;
     code = 'PAYLOAD_TOO_LARGE';

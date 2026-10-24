@@ -75,7 +75,7 @@ export async function login(req, res) {
     const updated = await User.findOneAndUpdate(
       { _id: user._id },
       { $inc: { failedLoginCount: 1 } },
-      { new: true },
+      { returnDocument: 'after' },
     );
     if (updated.failedLoginCount >= env.MAX_FAILED_LOGINS) {
       await User.updateOne(

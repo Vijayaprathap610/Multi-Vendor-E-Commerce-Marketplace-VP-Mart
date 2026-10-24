@@ -26,7 +26,7 @@ export async function updateMe(req, res) {
       ...(Object.keys(update).length ? { $set: update } : {}),
       ...(Object.keys(unset).length ? { $unset: unset } : {}),
     },
-    { new: true, runValidators: true },
+    { returnDocument: 'after', runValidators: true },
   );
   await audit(req, 'user.profile_updated', { target: { type: 'User', id: user._id } });
   res.json({ user });

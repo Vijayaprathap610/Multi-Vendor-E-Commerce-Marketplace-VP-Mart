@@ -15,6 +15,8 @@ export const logger = pino({
       '*.newPassword',
       '*.token',
       '*.otp',
+      '*.accountNumber',
+      'req.body.accountNumber',
     ],
     censor: '[redacted]',
   },
