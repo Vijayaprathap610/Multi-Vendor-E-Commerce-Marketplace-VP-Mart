@@ -23,7 +23,7 @@ export default [
       'react-hooks/exhaustive-deps': 'warn',
       'react/prop-types': 'off',
       'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
-      eqeqeq: 'error',
+      eqeqeq: ['error', 'always', { null: 'ignore' }],
     },
   },
   {

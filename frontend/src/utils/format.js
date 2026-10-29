@@ -16,3 +16,13 @@ export const statusLabel = (s) =>
     deactivated: 'Deactivated',
     deleted: 'Deleted',
   })[s] || s;
+
+export const formatDate = (iso, opts = { day: 'numeric', month: 'short' }) =>
+  iso
+    ? new Date(`${iso.length === 10 ? iso : iso.slice(0, 10)}T00:00:00`).toLocaleDateString(
+        'en-IN',
+        opts,
+      )
+    : '';
+export const formatDateTime = (iso) =>
+  iso ? new Date(iso).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '';

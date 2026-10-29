@@ -57,6 +57,8 @@ export const publicCategory = (c) => ({
   description: c.description,
   imageUrl: c.imageUrl,
   parent: c.parent ? String(c.parent) : null,
+  regulation: c.regulation,
+  deviceFields: c.deviceFields,
 });
 
 // Resolves "electronics,kids-baby" to those category ids plus all of their descendants.

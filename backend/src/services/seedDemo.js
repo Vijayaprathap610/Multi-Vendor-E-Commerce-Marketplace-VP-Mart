@@ -392,8 +392,9 @@ async function productImage(name, top, w = 900, h = 900) {
   return sharp(Buffer.from(svg)).png().toBuffer();
 }
 
-async function bannerImage(title, sub, color) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="520"><rect width="100%" height="100%" fill="${color}"/><circle cx="1400" cy="120" r="260" fill="#ffffff" opacity="0.09"/><circle cx="1180" cy="470" r="180" fill="#ffffff" opacity="0.07"/><text x="90" y="250" font-family="DejaVu Sans, Arial, sans-serif" font-weight="800" font-size="84" fill="#ffffff">${esc(title)}</text><text x="90" y="330" font-family="DejaVu Sans, Arial, sans-serif" font-size="38" fill="#ffffff" opacity="0.9">${esc(sub)}</text></svg>`;
+// Shapes only: the storefront overlays the banner's real title and description as text.
+async function bannerImage(_title, _sub, color) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="520"><rect width="100%" height="100%" fill="${color}"/><circle cx="1400" cy="120" r="260" fill="#ffffff" opacity="0.09"/><circle cx="1180" cy="470" r="180" fill="#ffffff" opacity="0.07"/></svg>`;
   return sharp(Buffer.from(svg)).png().toBuffer();
 }
 

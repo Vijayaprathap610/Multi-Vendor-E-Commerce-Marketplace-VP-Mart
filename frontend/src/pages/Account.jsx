@@ -144,8 +144,9 @@ function DangerTab() {
       await (kind === 'delete'
         ? authService.deleteAccount(password)
         : authService.deactivate(password));
-      setUser(null);
+      // Leave the protected page first, otherwise the route guard bounces to /login.
       navigate('/', { replace: true });
+      setUser(null);
     } catch (err) {
       setError(normalizeError(err).message);
     } finally {
@@ -159,8 +160,8 @@ function DangerTab() {
         variant="outline-dark"
         className="mb-4"
         onClick={async () => {
-          await logout();
           navigate('/', { replace: true });
+          await logout();
         }}
       >
         Sign out

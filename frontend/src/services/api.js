@@ -2,6 +2,32 @@ import axios from 'axios';
 
 const baseURL = import.meta.env.VITE_API_URL || '/api';
 const SAFE = new Set(['get', 'head', 'options']);
+// A tiny non-secret hint that this browser has signed in. It only decides whether a silent
+// refresh is worth attempting; the real session lives in HttpOnly cookies the page cannot read.
+const HINT = 'vp_session';
+export const sessionHint = {
+  has() {
+    try {
+      return localStorage.getItem(HINT) === '1';
+    } catch {
+      return true; // storage unavailable: fall back to asking the server
+    }
+  },
+  set() {
+    try {
+      localStorage.setItem(HINT, '1');
+    } catch {
+      /* ignore */
+    }
+  },
+  clear() {
+    try {
+      localStorage.removeItem(HINT);
+    } catch {
+      /* ignore */
+    }
+  },
+};
 const NO_REFRESH = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout'];
 
 export const api = axios.create({ baseURL, withCredentials: true, timeout: 15000 });
@@ -41,6 +67,7 @@ function refreshSession() {
     .post('/auth/refresh', {}, { _skipRefresh: true })
     .then((r) => {
       setCsrfToken(r.data.csrfToken);
+      sessionHint.set();
     })
     .finally(() => {
       refreshPending = null;
@@ -63,12 +90,19 @@ api.interceptors.response.use(
 
     const refreshable = ['UNAUTHENTICATED', 'TOKEN_INVALID'].includes(code);
     const skip = config._skipRefresh || NO_REFRESH.some((p) => config.url?.startsWith(p));
-    if (response.status === 401 && refreshable && !skip && !config._refreshed) {
+    if (
+      response.status === 401 &&
+      refreshable &&
+      !skip &&
+      !config._refreshed &&
+      sessionHint.has()
+    ) {
       config._refreshed = true;
       try {
         await refreshSession();
         return api(config);
       } catch {
+        sessionHint.clear();
         window.dispatchEvent(new Event('vp:auth-expired'));
       }
     }

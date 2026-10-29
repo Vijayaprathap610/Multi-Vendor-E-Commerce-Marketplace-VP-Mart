@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 // Original mark: red V, blue P, black "Mart", plus a small shopping-bag glyph.
 export default function Logo({ size = 'md', to = '/', className = '' }) {
   return (
-    <Link to={to} className={`vp-logo vp-logo-${size} ${className}`} aria-label="VP Mart home">
+    <Link to={to} className={`vp-logo vp-logo-${size} ${className}`}>
+      {/* Real text (not aria-label) so the accessible name matches what sighted users read. */}
+      <span className="visually-hidden">VP Mart home</span>
       <span className="vp-logo-v" aria-hidden="true">
         V
       </span>

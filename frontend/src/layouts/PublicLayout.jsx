@@ -1,34 +1,20 @@
-import { Link, Outlet } from 'react-router-dom';
-import Logo from '../components/Logo.jsx';
-import { useAuth } from '../context/AuthContext.jsx';
+import { Outlet } from 'react-router-dom';
+import Footer from '../components/Footer.jsx';
+import Header from '../components/Header.jsx';
+import LocationModal from '../components/LocationModal.jsx';
 
-// Minimal shell for Phase 1. The full navbar, category bar and footer arrive with the storefront.
 export default function PublicLayout() {
-  const { user } = useAuth();
   return (
     <div className="vp-shell">
-      <header className="vp-topbar">
-        <Logo />
-        <nav aria-label="Account" className="vp-topnav">
-          {user ? (
-            <Link to="/account" className="btn btn-dark btn-sm">
-              My account
-            </Link>
-          ) : (
-            <>
-              <Link to="/login" className="btn btn-outline-dark btn-sm">
-                Sign in
-              </Link>
-              <Link to="/register" className="btn btn-dark btn-sm">
-                Create account
-              </Link>
-            </>
-          )}
-        </nav>
-      </header>
-      <div className="vp-content">
+      <a href="#main" className="vp-skip">
+        Skip to main content
+      </a>
+      <Header />
+      <main id="main" className="vp-content" tabIndex={-1}>
         <Outlet />
-      </div>
+      </main>
+      <Footer />
+      <LocationModal />
     </div>
   );
 }

@@ -21,6 +21,8 @@ const schema = z.object({
   COOKIE_DOMAIN: z.string().optional(),
   BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+  API_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(300),
+  STRICT_RATE_LIMIT_PER_HOUR: z.coerce.number().int().positive().default(5),
   MAX_FAILED_LOGINS: z.coerce.number().int().positive().default(5),
   LOCKOUT_MINUTES: z.coerce.number().int().positive().default(15),
   MAIL_TRANSPORT: z.enum(['smtp', 'outbox']).default('outbox'),

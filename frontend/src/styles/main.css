@@ -9,7 +9,11 @@
     'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --bs-body-color: var(--vp-ink);
   --bs-link-color: var(--vp-blue);
+  --bs-link-color-rgb: 27, 79, 216;
   --bs-link-hover-color: #123aa6;
+  --bs-link-hover-color-rgb: 18, 58, 166;
+  --bs-secondary-color: #565d6b;
+  --bs-secondary-color-rgb: 86, 93, 107;
   --bs-dark: var(--vp-ink);
   --bs-dark-rgb: 20, 23, 28;
 }
@@ -258,4 +262,9 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Bootstrap's default grey fails 4.5:1 on our light surfaces. */
+.text-secondary {
+  color: #565d6b !important;
 }

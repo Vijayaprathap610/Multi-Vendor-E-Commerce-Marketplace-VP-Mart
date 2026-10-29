@@ -3,19 +3,22 @@ import Brand from '../models/Brand.js';
 import Listing from '../models/Listing.js';
 import VendorProfile from '../models/VendorProfile.js';
 import { discountPercent } from '../utils/money.js';
-import { escapeRegex } from '../utils/text.js';
+import { escapeRegex, slugify } from '../utils/text.js';
 import { logger } from '../utils/logger.js';
 import { cached } from './cache.js';
 import { resolveCategoryIds } from './catalogService.js';
 import { esClient, searchEnabled } from './searchSync.js';
 
+export const DEAL_MIN_PERCENT = 15;
 export const SORTS = ['relevance', 'price_asc', 'price_desc', 'popularity', 'rating', 'newest'];
 
 export const toPublicListing = (l) => ({
   id: String(l._id),
   slug: l.slug,
   title: l.title,
-  brand: l.brandId ? { id: String(l.brandId), name: l.brandName } : null,
+  brand: l.brandId
+    ? { id: String(l.brandId), name: l.brandName, slug: slugify(l.brandName) }
+    : null,
   category: { id: String(l.categoryId), name: l.categoryName, slug: l.categorySlug },
   pricePaise: l.pricePaise,
   mrpPaise: l.mrpPaise,
@@ -75,6 +78,17 @@ function mongoFilter(p, f) {
   if (p.inStock) {
     filter.manualOutOfStock = false;
     filter.stock = { $gt: 0 };
+  }
+  if (p.collection === 'best-sellers') filter.soldCount = { $gt: 0 };
+  if (p.collection === 'trending')
+    filter.$or = [{ soldCount: { $gt: 0 } }, { viewCount: { $gt: 0 } }];
+  if (p.collection === 'deals') {
+    filter.$expr = {
+      $gte: [
+        { $multiply: [{ $subtract: ['$mrpPaise', '$pricePaise'] }, 100] },
+        { $multiply: ['$mrpPaise', DEAL_MIN_PERCENT] },
+      ],
+    };
   }
   if (p.q) {
     // Every word must appear in the title, brand or category (case-insensitive, partial words ok).
@@ -158,6 +172,17 @@ export function buildEsQuery(p, f) {
     });
   }
   if (p.inStock) filter.push({ term: { inStock: true } });
+  if (p.collection === 'best-sellers') filter.push({ range: { soldCount: { gt: 0 } } });
+  if (p.collection === 'deals')
+    filter.push({ range: { discountPercent: { gte: DEAL_MIN_PERCENT } } });
+  if (p.collection === 'trending') {
+    filter.push({
+      bool: {
+        should: [{ range: { soldCount: { gt: 0 } } }, { range: { viewCount: { gt: 0 } } }],
+        minimum_should_match: 1,
+      },
+    });
+  }
   const must = p.q
     ? [
         {
@@ -225,7 +250,19 @@ async function esSearch(p, f) {
   };
 }
 
-export async function searchListings(params) {
+// Collections pick a sensible default order when the caller did not choose one.
+const COLLECTION_SORT = {
+  trending: 'popularity',
+  'best-sellers': 'popularity',
+  deals: 'price_asc',
+  'new-arrivals': 'newest',
+};
+
+export async function searchListings(input) {
+  const params =
+    input.collection && input.sort === 'relevance'
+      ? { ...input, sort: COLLECTION_SORT[input.collection] }
+      : input;
   const f = await resolveFilters(params);
   if (f.empty)
     return {

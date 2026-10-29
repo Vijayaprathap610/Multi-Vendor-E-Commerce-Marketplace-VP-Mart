@@ -26,6 +26,7 @@ export const searchQuery = z
     category: list.optional(),
     brand: list.optional(),
     vendor: z.string().trim().toLowerCase().max(80).optional(),
+    collection: z.enum(['trending', 'best-sellers', 'deals', 'new-arrivals']).optional(),
     minPrice: rupees.optional(),
     maxPrice: rupees.optional(),
     sort: z.enum(SORTS).default('relevance'),

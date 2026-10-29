@@ -32,6 +32,7 @@ export const INDEX_MAPPING = {
     categoryPath: { type: 'keyword' },
     vendorId: { type: 'keyword' },
     pricePaise: { type: 'long' },
+    discountPercent: { type: 'integer' },
     ratingAvg: { type: 'float' },
     soldCount: { type: 'long' },
     viewCount: { type: 'long' },
@@ -49,6 +50,8 @@ export const toSearchDoc = (l) => ({
   categoryPath: (l.categoryPath ?? []).map(String),
   vendorId: String(l.vendorId),
   pricePaise: l.pricePaise,
+  discountPercent:
+    l.mrpPaise > l.pricePaise ? Math.floor(((l.mrpPaise - l.pricePaise) * 100) / l.mrpPaise) : 0,
   ratingAvg: l.ratingAvg,
   soldCount: l.soldCount,
   viewCount: l.viewCount,

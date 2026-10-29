@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { api, normalizeError, setCsrfToken } from '../services/api.js';
+import { api, normalizeError, sessionHint, setCsrfToken } from '../services/api.js';
 
 // A scripted adapter stands in for the network so the interceptor logic itself is what runs.
 function script(handler) {
@@ -18,7 +18,10 @@ function script(handler) {
   return calls;
 }
 
-beforeEach(() => setCsrfToken(null));
+beforeEach(() => {
+  setCsrfToken(null);
+  sessionHint.set();
+});
 
 describe('api client', () => {
   it('fetches a CSRF token once and sends it on unsafe requests only', async () => {
@@ -92,6 +95,39 @@ describe('api client', () => {
     const res = await api.post('/things', {});
     expect(res.data.ok).toBe(true);
     expect(calls.filter((c) => c.url === '/things')).toHaveLength(2);
+  });
+});
+
+describe('session hint', () => {
+  it('does not attempt a silent refresh for visitors who never signed in', async () => {
+    sessionHint.clear();
+    const calls = script((c) =>
+      c.url.endsWith('/auth/csrf')
+        ? { status: 200, data: { csrfToken: 't' } }
+        : { status: 401, data: { error: { code: 'UNAUTHENTICATED' } } },
+    );
+    await expect(api.get('/orders')).rejects.toBeTruthy();
+    expect(calls.some((c) => c.url === '/auth/refresh')).toBe(false);
+  });
+
+  it('forgets the hint when refresh fails, so later requests stop retrying', async () => {
+    script((c) => {
+      if (c.url.endsWith('/auth/csrf')) return { status: 200, data: { csrfToken: 't' } };
+      return {
+        status: 401,
+        data: { error: { code: c.url === '/auth/refresh' ? 'REFRESH_INVALID' : 'TOKEN_INVALID' } },
+      };
+    });
+    await expect(api.get('/orders')).rejects.toBeTruthy();
+    expect(sessionHint.has()).toBe(false);
+  });
+
+  it('skips the /auth/me call entirely when this browser has never signed in', async () => {
+    const { authService } = await import('../services/authService.js');
+    sessionHint.clear();
+    const calls = script(() => ({ status: 200, data: {} }));
+    await expect(authService.me()).rejects.toMatchObject({ response: { status: 401 } });
+    expect(calls).toHaveLength(0);
   });
 });
 

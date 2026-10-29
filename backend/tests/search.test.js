@@ -206,6 +206,11 @@ describe('search, filter and sort', () => {
     assert.equal(it1.discountPercent, 37);
     assert.equal(it1.inStock, true);
     assert.equal(it1.vendor.name, 'Alpha Store');
+    assert.deepEqual(it1.brand, {
+      id: String((await models.Brand.findOne({ name: 'Acme' }))._id),
+      name: 'Acme',
+      slug: 'acme',
+    });
     for (const k of ['soldCount', 'viewCount', 'vendorActive', 'catActive', 'searchDirty'])
       assert.ok(!(k in it1), k);
   });
@@ -341,5 +346,45 @@ describe('product detail, reviews and related', () => {
       ),
     );
     assert.ok(!r.body.items.some((i) => i.id === String(a._id)));
+  });
+});
+
+describe('collections (navigation destinations)', () => {
+  it('serves trending, best sellers, deals and new arrivals as distinct backend-driven lists', async () => {
+    const { a } = await seedShop();
+    // Linen Shirt: 37% off. Ice cream: most sold. Trousers: newest. Denim: out of stock.
+    assert.deepEqual(titles(await get('/api/catalog/search?collection=deals')), ['Linen Shirt']);
+    assert.deepEqual(titles(await get('/api/catalog/search?collection=best-sellers')).slice(0, 2), [
+      'Vanilla Ice Cream',
+      'Linen Shirt',
+    ]);
+    assert.equal(
+      titles(await get('/api/catalog/search?collection=new-arrivals'))[0],
+      'Linen Trousers',
+    );
+    const trending = await get('/api/catalog/search?collection=trending');
+    assert.ok(trending.body.total >= 3 && titles(trending)[0] === 'Vanilla Ice Cream');
+    await models.Listing.updateMany({ _id: { $ne: a._id } }, { soldCount: 0, viewCount: 0 });
+    await models.Listing.updateOne({ _id: a._id }, { soldCount: 0, viewCount: 0 });
+    await catalogChanged();
+    assert.equal((await get('/api/catalog/search?collection=best-sellers')).body.total, 0);
+    assert.equal(
+      (await get('/api/catalog/search?collection=trending')).body.total,
+      0,
+      'no signals, nothing trending',
+    );
+    assert.equal((await get('/api/catalog/search?collection=bogus')).status, 422);
+  });
+
+  it('collections combine with category and price filters', async () => {
+    await seedShop();
+    assert.equal(
+      (await get('/api/catalog/search?collection=deals&category=ice-cream')).body.total,
+      0,
+    );
+    assert.equal(
+      (await get('/api/catalog/search?collection=deals&category=fashion&maxPrice=600')).body.total,
+      1,
+    );
   });
 });

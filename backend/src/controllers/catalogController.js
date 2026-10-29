@@ -10,7 +10,7 @@ import { escapeRegex } from '../utils/text.js';
 import { cached } from '../services/cache.js';
 import { categoryTree, publicCategory } from '../services/catalogService.js';
 import { estimateDelivery } from '../services/deliveryEstimate.js';
-import { searchListings, toPublicListing } from '../services/search.js';
+import { DEAL_MIN_PERCENT, searchListings, toPublicListing } from '../services/search.js';
 
 export const config = (_req, res) => {
   const social = Object.fromEntries(
@@ -219,8 +219,6 @@ export async function bannerClick(req, res) {
   if (!r.matchedCount) throw notFound('Banner not found');
   res.status(204).end();
 }
-
-const DEAL_MIN_PERCENT = 15;
 
 export async function home(_req, res) {
   const data = await cached('home', 'v1', 120, async () => {

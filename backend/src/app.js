@@ -16,8 +16,8 @@ import { idParams, slugParams } from './validators/catalog.js';
 
 export function createApp({
   authLimit = env.AUTH_RATE_LIMIT_MAX,
-  strictLimit = 5,
-  apiLimit = 300,
+  strictLimit = env.STRICT_RATE_LIMIT_PER_HOUR,
+  apiLimit = env.API_RATE_LIMIT_PER_MIN,
 } = {}) {
   const app = express();
   app.disable('x-powered-by');

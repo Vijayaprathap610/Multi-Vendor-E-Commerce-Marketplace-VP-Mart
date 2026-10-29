@@ -319,3 +319,25 @@ describe('rate limiting and audit', () => {
     assert.ok(!JSON.stringify(log).includes(PASSWORD));
   });
 });
+
+describe('rate limits count failures, not normal use', () => {
+  it('successful logins and refreshes never exhaust the limit', async () => {
+    const limited = createApp({ authLimit: 3 });
+    const u = await makeUser();
+    const c = newClient(limited);
+    for (let i = 0; i < 8; i++) assert.equal((await c.login(u.email)).status, 200, `login ${i}`);
+    for (let i = 0; i < 8; i++)
+      assert.equal((await c.post('/api/auth/refresh')).status, 200, `refresh ${i}`);
+  });
+
+  it('failed logins are still throttled', async () => {
+    const limited = createApp({ authLimit: 3 });
+    const codes = [];
+    for (let i = 0; i < 5; i++)
+      codes.push(
+        (await newClient(limited).post('/api/auth/login', { email: 'x@y.com', password: 'bad' }))
+          .status,
+      );
+    assert.deepEqual(codes, [401, 401, 401, 429, 429]);
+  });
+});

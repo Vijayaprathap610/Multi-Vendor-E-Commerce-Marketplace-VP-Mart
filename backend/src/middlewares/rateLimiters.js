@@ -5,10 +5,11 @@ const handler = (_req, res) =>
     error: { code: 'RATE_LIMITED', message: 'Too many attempts. Please try again later.' },
   });
 
-export const makeAuthLimiter = (max) =>
+export const makeAuthLimiter = (max, { skipSuccessful = false } = {}) =>
   rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: max,
+    skipSuccessfulRequests: skipSuccessful,
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     handler,

@@ -148,6 +148,13 @@ describe('Elasticsearch query building', () => {
     assert.equal(body.size, 10);
   });
 
+  it('builds collection filters for deals, best sellers and trending', () => {
+    const f = (c) => buildEsQuery({ ...base, collection: c }, {}).query.bool.filter;
+    assert.ok(f('deals').some((x) => x.range?.discountPercent?.gte === 15));
+    assert.ok(f('best-sellers').some((x) => x.range?.soldCount?.gt === 0));
+    assert.ok(f('trending').some((x) => x.bool?.minimum_should_match === 1));
+  });
+
   it('uses match_all without a query and treats user text as data, not query syntax', () => {
     assert.deepEqual(buildEsQuery(base, {}).query.bool.must, [{ match_all: {} }]);
     const evil = buildEsQuery({ ...base, q: '{"script":"x"} OR *:*' }, {});

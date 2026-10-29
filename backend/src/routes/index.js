@@ -22,6 +22,9 @@ import * as av from '../validators/admin.js';
 export function buildRouter({ authLimit, strictLimit }) {
   const r = Router();
   const authLimiter = makeAuthLimiter(authLimit);
+  // Only FAILED logins/refreshes count toward the brute-force limit, so normal use never locks people out.
+  const loginLimiter = makeAuthLimiter(authLimit, { skipSuccessful: true });
+  const refreshLimiter = makeAuthLimiter(authLimit * 3, { skipSuccessful: true });
   const strictLimiter = makeStrictLimiter(strictLimit);
   const uploadLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
@@ -43,8 +46,8 @@ export function buildRouter({ authLimit, strictLimit }) {
   // --- Authentication ---
   r.get('/auth/csrf', auth.csrf);
   r.post('/auth/register', authLimiter, validate({ body: v.registerBody }), auth.register);
-  r.post('/auth/login', authLimiter, validate({ body: v.loginBody }), auth.login);
-  r.post('/auth/refresh', authLimiter, auth.refresh);
+  r.post('/auth/login', loginLimiter, validate({ body: v.loginBody }), auth.login);
+  r.post('/auth/refresh', refreshLimiter, auth.refresh);
   r.post('/auth/logout', auth.logout);
   r.get('/auth/me', authenticate, auth.me);
   r.post(
