@@ -1,4 +1,3 @@
-import Order from '../models/Order.js';
 import * as cart from '../services/cartService.js';
 
 export const get = async (req, res) => res.json(await cart.getCart(req.user._id));
@@ -21,20 +20,10 @@ export async function clear(req, res) {
   res.json(await cart.getCart(req.user._id));
 }
 // Prices an arbitrary list of items (used by Buy Now) with the same server-side rules as the cart.
-export const quote = async (req, res) => res.json(await cart.priceItems(req.valid.body.items));
-
-export async function myOrders(req, res) {
-  const items = await Order.find({ buyerId: req.user._id })
-    .sort({ createdAt: -1 })
-    .limit(50)
-    .lean();
-  res.json({
-    items: items.map((o) => ({
-      id: String(o._id),
-      orderNumber: o.orderNumber,
-      status: o.status,
-      totalPaise: o.totalPaise,
-      createdAt: o.createdAt,
-    })),
+export const quote = async (req, res) => {
+  const { _couponDoc, ...priced } = await cart.priceItems(req.valid.body.items, {
+    couponCode: req.valid.body.couponCode,
+    buyerId: req.user._id,
   });
-}
+  res.json(priced);
+};

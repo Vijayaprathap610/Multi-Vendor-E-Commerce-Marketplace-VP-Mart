@@ -7,6 +7,9 @@ import Review from '../models/Review.js';
 import VendorProfile from '../models/VendorProfile.js';
 import { notFound } from '../utils/AppError.js';
 import { escapeRegex } from '../utils/text.js';
+import Coupon from '../models/Coupon.js';
+import { describe } from '../services/couponService.js';
+import { onlineEnabled } from '../services/paymentProvider.js';
 import { cached } from '../services/cache.js';
 import { categoryTree, publicCategory } from '../services/catalogService.js';
 import { estimateDelivery } from '../services/deliveryEstimate.js';
@@ -21,14 +24,39 @@ export const config = (_req, res) => {
       youtube: env.SOCIAL_YOUTUBE,
     }).filter(([, v]) => v),
   );
-  // paymentMethods is filled in by the checkout feature once a method is actually enabled.
   res.json({
     region: { country: 'IN', currency: 'INR' },
     taxMode: env.TAX_MODE,
     social,
-    paymentMethods: [],
+    // Only methods that can actually be used right now: online needs real provider keys.
+    paymentMethods: ['cod', ...(onlineEnabled() ? ['online'] : [])],
   });
 };
+
+export async function publicCoupons(_req, res) {
+  const now = new Date();
+  const rows = await Coupon.find({
+    isActive: true,
+    isPublic: true,
+    'eligibility.mode': 'all',
+    validFrom: { $lte: now },
+    validTo: { $gte: now },
+  })
+    .sort({ validTo: 1 })
+    .limit(30)
+    .lean();
+  const live = rows.filter((c) => !c.usageLimit || c.usedCount + c.reservedCount < c.usageLimit);
+  res.json({
+    items: live.map((c) => ({
+      code: c.code,
+      title: c.title,
+      description: describe(c),
+      minPurchasePaise: c.minPurchasePaise,
+      validTo: c.validTo,
+      appliesToAll: c.appliesToAll,
+    })),
+  });
+}
 
 export const categories = async (_req, res) => res.json({ items: await categoryTree() });
 

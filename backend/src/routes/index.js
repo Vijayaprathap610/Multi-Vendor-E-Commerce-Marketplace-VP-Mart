@@ -9,6 +9,10 @@ import * as vendor from '../controllers/vendorController.js';
 import * as cart from '../controllers/cartController.js';
 import * as upload from '../controllers/uploadController.js';
 import * as contact from '../controllers/contactController.js';
+import * as commerce from '../controllers/commerceController.js';
+import * as adminCom from '../controllers/adminCommerceController.js';
+import * as vendorOrders from '../controllers/vendorOrdersController.js';
+import * as ccv from '../validators/commerce.js';
 import { authenticate, authorize, requireActive } from '../middlewares/auth.js';
 import { validate } from '../middlewares/validate.js';
 import { makeAuthLimiter, makeStrictLimiter } from '../middlewares/rateLimiters.js';
@@ -103,6 +107,7 @@ export function buildRouter({ authLimit, strictLimit }) {
   );
   r.get('/catalog/listings/:id/related', validate({ params: cv.idParams }), catalog.related);
   r.get('/catalog/shops/:slug', validate({ params: cv.slugParams }), catalog.vendorShop);
+  r.get('/catalog/coupons', catalog.publicCoupons);
   r.post('/contact', strictLimiter, validate({ body: cv.contactBody }), contact.submit);
 
   // --- Uploads ---
@@ -132,7 +137,67 @@ export function buildRouter({ authLimit, strictLimit }) {
   );
   r.delete('/cart', ...buyer, cart.clear);
   r.post('/pricing/quote', ...buyer, validate({ body: cv.quoteBody }), cart.quote);
-  r.get('/orders', ...buyer, cart.myOrders);
+  r.post(
+    '/cart/coupon',
+    ...buyer,
+    validate({ body: ccv.couponApplyBody }),
+    commerce.applyCartCoupon,
+  );
+  r.delete('/cart/coupon', ...buyer, commerce.removeCartCoupon);
+
+  // --- Buyer: addresses, checkout, orders, payments ---
+  r.get('/addresses', ...buyer, commerce.listAddresses);
+  r.post('/addresses', ...buyer, validate({ body: ccv.addressBody }), commerce.createAddress);
+  r.patch(
+    '/addresses/:id',
+    ...buyer,
+    validate({ params: cv.idParams, body: ccv.addressUpdateBody }),
+    commerce.updateAddress,
+  );
+  r.delete('/addresses/:id', ...buyer, validate({ params: cv.idParams }), commerce.deleteAddress);
+  r.post(
+    '/checkout/preview',
+    ...buyer,
+    validate({ body: ccv.previewBody }),
+    commerce.previewCheckout,
+  );
+  r.post('/checkout', ...buyer, validate({ body: ccv.checkoutBody }), commerce.checkout);
+  r.get('/orders', ...buyer, validate({ query: ccv.ordersQuery }), commerce.listMyOrders);
+  r.get('/orders/:id', ...buyer, validate({ params: cv.idParams }), commerce.getMyOrder);
+  r.post(
+    '/orders/:id/cancel',
+    ...buyer,
+    validate({ params: cv.idParams, body: ccv.cancelOrderBody }),
+    commerce.cancelMyOrder,
+  );
+  r.post(
+    '/payments/verify',
+    ...buyer,
+    validate({ body: ccv.verifyPaymentBody }),
+    commerce.verifyPayment,
+  );
+  r.post(
+    '/payments/failed',
+    ...buyer,
+    validate({ body: ccv.paymentFailedBody }),
+    commerce.paymentFailed,
+  );
+  // Provider webhook: no cookies/CSRF; authenticated by HMAC over the raw body.
+  r.post('/webhooks/razorpay', commerce.razorpayWebhook);
+
+  // --- Any signed-in user: notifications ---
+  r.get(
+    '/notifications',
+    authenticate,
+    validate({ query: ccv.notificationsQuery }),
+    commerce.listNotifications,
+  );
+  r.post(
+    '/notifications/read',
+    authenticate,
+    validate({ body: ccv.notificationsReadBody }),
+    commerce.markNotificationsRead,
+  );
 
   // --- Vendor ---
   const vendorOnly = [authenticate, authorize('vendor')];
@@ -141,6 +206,13 @@ export function buildRouter({ authLimit, strictLimit }) {
   r.post('/vendor/profile/submit', ...vendorOnly, vendor.submitMyProfile);
   const vendorActive = [...vendorOnly, requireActive];
   r.get('/vendor/summary', ...vendorActive, vendor.summary);
+  r.get('/vendor/orders', ...vendorActive, vendorOrders.listVendorOrders);
+  r.get(
+    '/vendor/orders/:id',
+    ...vendorActive,
+    validate({ params: cv.idParams }),
+    vendorOrders.getVendorOrder,
+  );
   r.get(
     '/vendor/listings',
     ...vendorActive,
@@ -243,6 +315,63 @@ export function buildRouter({ authLimit, strictLimit }) {
     adminCat.moderateListing,
   );
 
+  r.get(
+    '/admin/coupons',
+    ...adminOnly,
+    validate({ query: ccv.couponsQuery }),
+    adminCom.listCoupons,
+  );
+  r.post(
+    '/admin/coupons',
+    ...adminOnly,
+    validate({ body: ccv.couponCreateBody }),
+    adminCom.createGeneralCoupon,
+  );
+  r.post(
+    '/admin/products/:id/coupons',
+    ...adminOnly,
+    validate({ params: cv.idParams, body: ccv.couponForProductBody }),
+    adminCom.createProductCoupon,
+  );
+  r.patch(
+    '/admin/coupons/:id',
+    ...adminOnly,
+    validate({ params: cv.idParams, body: ccv.couponUpdateBody }),
+    adminCom.updateCoupon,
+  );
+  r.get(
+    '/admin/coupons/:id/redemptions',
+    ...adminOnly,
+    validate({ params: cv.idParams }),
+    adminCom.couponRedemptions,
+  );
+  r.get(
+    '/admin/orders',
+    ...adminOnly,
+    validate({ query: ccv.adminOrdersQuery }),
+    adminCom.adminOrders,
+  );
+  r.get('/admin/orders/:id', ...adminOnly, validate({ params: cv.idParams }), adminCom.adminOrder);
+  r.get(
+    '/admin/payments',
+    ...adminOnly,
+    validate({ query: ccv.adminPaymentsQuery }),
+    adminCom.adminPayments,
+  );
+  r.get('/admin/refunds', ...adminOnly, adminCom.adminRefunds);
+  r.post(
+    '/admin/refunds/:id/retry',
+    ...adminOnly,
+    validate({ params: cv.idParams }),
+    adminCom.retryRefund,
+  );
+  r.get('/admin/settings', ...adminOnly, adminCom.getSettings);
+  r.put(
+    '/admin/settings',
+    ...adminOnly,
+    validate({ body: ccv.settingsBody }),
+    adminCom.putSettings,
+  );
   r.get('/admin/messages', ...adminOnly, adminCat.listMessages);
   r.patch(
     '/admin/messages/:id/resolve',

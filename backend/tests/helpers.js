@@ -24,10 +24,56 @@ const { seedCategories } = await import('../src/services/seedCatalog.js');
 const fsp = await import('node:fs/promises');
 const sharp = (await import('sharp')).default;
 const { createListing } = await import('../src/services/listingService.js');
+const provider = await import('../src/services/paymentProvider.js');
+const { cancelUnpaid } = await import('../src/services/orderService.js');
 const { hashPassword } = await import('../src/services/userService.js');
 
 export { mongoose, User, Session, AuditLog, createApp, models, seedCategories };
 export const PASSWORD = 'Sup3rSecret99';
+export const KEY_SECRET = 'test_key_secret_123';
+export const WEBHOOK_SECRET = 'whsec_test_123';
+
+// A stand-in for the Razorpay API CLIENT only (creating orders and refunds needs real keys).
+// Signature checking is NOT faked: the app's real HMAC code runs against these test secrets.
+export function installFakeProvider(over = {}) {
+  const calls = { orders: [], refunds: [] };
+  const fake = {
+    name: 'razorpay',
+    keyId: 'rzp_test_fake',
+    keySecret: KEY_SECRET,
+    webhookSecret: WEBHOOK_SECRET,
+    createOrder: async (o) => {
+      calls.orders.push(o);
+      return { id: `order_${Math.random().toString(36).slice(2, 12)}`, amount: o.amountPaise };
+    },
+    refund: async (r) => {
+      calls.refunds.push(r);
+      return { id: `rfnd_${Math.random().toString(36).slice(2, 12)}` };
+    },
+    ...over,
+  };
+  provider.setProviderForTests(fake);
+  return { fake, calls };
+}
+export const removeFakeProvider = () => provider.setProviderForTests(null);
+export const sign = (orderId, paymentId) =>
+  provider.signForTests(KEY_SECRET, `${orderId}|${paymentId}`);
+export const signBody = (raw) => provider.signForTests(WEBHOOK_SECRET, raw);
+export { cancelUnpaid };
+
+export async function makeAddress(user, over = {}) {
+  return models.Address.create({
+    userId: user._id,
+    name: 'Asha Rao',
+    phone: '9876543210',
+    line1: '12 Lake View Road',
+    city: 'Chennai',
+    state: 'Tamil Nadu',
+    pincode: '600001',
+    isDefault: true,
+    ...over,
+  });
+}
 export const makePng = (w = 64, h = 64, color = '#d62839') =>
   sharp({ create: { width: w, height: h, channels: 3, background: color } })
     .png()
@@ -90,6 +136,11 @@ export async function makeUser(overrides = {}) {
 }
 
 // Cookie-aware API client that automatically does the CSRF double-submit like the SPA will.
+// Raw JSON POST with explicit headers (used for webhooks, which carry no cookies or CSRF token).
+export async function rawPost(app, url, bodyText, headers = {}) {
+  return request(app).post(url).set('Content-Type', 'application/json').set(headers).send(bodyText);
+}
+
 export class Client {
   constructor(app) {
     this.agent = request.agent(app);

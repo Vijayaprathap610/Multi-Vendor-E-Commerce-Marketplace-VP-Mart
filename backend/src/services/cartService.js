@@ -5,12 +5,14 @@ import VendorProfile from '../models/VendorProfile.js';
 import { AppError } from '../utils/AppError.js';
 import { roundDiv } from '../utils/money.js';
 import { cartCache } from './cache.js';
+import { evaluate, findByCode, normaliseCode } from './couponService.js';
 
 export const MAX_QTY = 20;
 
-// Server-side pricing. Prices, stock, shipping and tax come ONLY from the database; the
-// browser sends listing ids and quantities and nothing else. Everything is integer paise.
-export async function priceItems(items, { taxMode = env.TAX_MODE } = {}) {
+// Server-side pricing. Prices, stock, shipping, tax and coupon discounts come ONLY from the
+// database; the browser sends listing ids, quantities and an optional coupon code, nothing else.
+// Everything is integer paise.
+export async function priceItems(items, { taxMode = env.TAX_MODE, couponCode, buyerId } = {}) {
   const ids = items.map((i) => i.listingId);
   const listings = await Listing.find({ _id: { $in: ids } }).lean();
   const byId = new Map(listings.map((l) => [String(l._id), l]));
@@ -39,69 +41,106 @@ export async function priceItems(items, { taxMode = env.TAX_MODE } = {}) {
       available = false;
       issues.push('INSUFFICIENT_STOCK');
     }
-    const linePaise = l.pricePaise * it.quantity;
-    const rate = l.gstPercent ?? 18;
-    const taxPaise =
-      taxMode === 'inclusive'
-        ? roundDiv(linePaise * rate, 100 + rate)
-        : roundDiv(linePaise * rate, 100);
     return {
       listingId: String(l._id),
+      productId: String(l.productId),
+      categoryId: String(l.subcategoryId ?? l.categoryId),
       title: l.title,
       slug: l.slug,
+      sku: l.sku,
+      variant: l.variant,
       image: l.images?.[0]?.thumbUrl ?? null,
       vendor: { id: String(l.vendorId), name: l.vendorName },
       unitPaise: l.pricePaise,
       mrpPaise: l.mrpPaise,
       quantity: it.quantity,
-      linePaise,
-      gstPercent: rate,
-      taxPaise,
+      linePaise: l.pricePaise * it.quantity,
+      discountPaise: 0,
+      gstPercent: l.gstPercent ?? 18,
       available,
       maxQuantity: Math.min(MAX_QTY, stock),
       issues,
     };
   });
 
+  // Coupon: evaluated against the available lines. Applying changes no counters.
+  let coupon = null;
+  let couponDoc = null;
+  if (couponCode) {
+    couponDoc = await findByCode(couponCode);
+    const ev = await evaluate(couponDoc, { buyerId, lines: lines.filter((l) => l.available) });
+    if (ev.valid) {
+      coupon = {
+        code: ev.code,
+        valid: true,
+        discountPaise: ev.discountPaise,
+        title: couponDoc.title,
+      };
+      for (const l of lines) l.discountPaise = ev.allocations.get(l.listingId) ?? 0;
+    } else {
+      coupon = {
+        code: normaliseCode(couponCode),
+        valid: false,
+        reason: ev.reason,
+        message: ev.message,
+      };
+    }
+  }
+
+  for (const l of lines) {
+    if (!l.available) continue;
+    l.netPaise = l.linePaise - l.discountPaise;
+    // Tax is computed on the discounted amount.
+    l.taxPaise =
+      taxMode === 'inclusive'
+        ? roundDiv(l.netPaise * l.gstPercent, 100 + l.gstPercent)
+        : roundDiv(l.netPaise * l.gstPercent, 100);
+  }
+
   const payable = lines.filter((l) => l.available);
   const subtotalPaise = payable.reduce((s, l) => s + l.linePaise, 0);
+  const discountPaise = payable.reduce((s, l) => s + l.discountPaise, 0);
   const taxPaise = payable.reduce((s, l) => s + l.taxPaise, 0);
 
-  // One shipping charge per vendor shipment, with free shipping above the vendor's threshold.
+  // One shipping charge per vendor shipment; free shipping is judged on the discounted value.
   const groups = new Map();
   for (const l of payable) {
     const g = groups.get(l.vendor.id) ?? {
       vendorId: l.vendor.id,
       vendorName: l.vendor.name,
       subtotalPaise: 0,
+      discountPaise: 0,
     };
     g.subtotalPaise += l.linePaise;
+    g.discountPaise += l.discountPaise;
     groups.set(l.vendor.id, g);
   }
   const shipments = [...groups.values()].map((g) => {
     const d = profileOf.get(g.vendorId)?.delivery ?? {};
-    const free = d.freeShippingAbovePaise != null && g.subtotalPaise >= d.freeShippingAbovePaise;
-    return { ...g, shippingPaise: free ? 0 : (d.shippingChargePaise ?? 0), freeShipping: free };
+    const net = g.subtotalPaise - g.discountPaise;
+    const free = d.freeShippingAbovePaise != null && net >= d.freeShippingAbovePaise;
+    return {
+      ...g,
+      netPaise: net,
+      shippingPaise: free ? 0 : (d.shippingChargePaise ?? 0),
+      freeShipping: free,
+    };
   });
   const shippingPaise = shipments.reduce((s, g) => s + g.shippingPaise, 0);
-  const discountPaise = 0;
   const totalPaise =
     subtotalPaise - discountPaise + shippingPaise + (taxMode === 'exclusive' ? taxPaise : 0);
 
   return {
     lines,
     shipments,
-    totals: {
-      subtotalPaise,
-      discountPaise,
-      shippingPaise,
-      taxPaise,
-      taxMode,
-      totalPaise,
-    },
+    coupon,
+    totals: { subtotalPaise, discountPaise, shippingPaise, taxPaise, taxMode, totalPaise },
     hasIssues: lines.some((l) => !l.available),
+    _couponDoc: couponDoc,
   };
 }
+
+export const getCartItems = (userId) => cartItems(userId);
 
 async function cartItems(userId) {
   const cached = await cartCache.get(userId);
@@ -116,7 +155,33 @@ async function cartItems(userId) {
 }
 
 export async function getCart(userId) {
-  return priceItems(await cartItems(userId));
+  const cart = await Cart.findOne({ userId }).select('couponCode').lean();
+  const { _couponDoc, ...priced } = await priceItems(await cartItems(userId), {
+    couponCode: cart?.couponCode,
+    buyerId: userId,
+  });
+  return priced;
+}
+
+// Applying a coupon only stores the code on the cart. It is re-validated on every read and again
+// at checkout, and nothing is counted as used until an order is confirmed.
+export async function applyCoupon(userId, code) {
+  const items = await cartItems(userId);
+  if (!items.length)
+    throw new AppError(409, 'CART_EMPTY', 'Add items to your cart before applying a coupon');
+  const { coupon } = await priceItems(items, { couponCode: code, buyerId: userId });
+  if (!coupon.valid)
+    throw new AppError(422, 'COUPON_INVALID', coupon.message, {
+      code: coupon.message,
+      reason: coupon.reason,
+    });
+  await Cart.updateOne({ userId }, { couponCode: coupon.code });
+  return getCart(userId);
+}
+
+export async function removeCoupon(userId) {
+  await Cart.updateOne({ userId }, { $unset: { couponCode: '' } });
+  return getCart(userId);
 }
 
 async function sync(userId) {
