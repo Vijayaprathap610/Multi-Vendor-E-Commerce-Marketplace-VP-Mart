@@ -26,3 +26,57 @@ export const formatDate = (iso, opts = { day: 'numeric', month: 'short' }) =>
     : '';
 export const formatDateTime = (iso) =>
   iso ? new Date(iso).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+
+export const ORDER_STATUS = {
+  pending_payment: 'Awaiting payment',
+  payment_failed: 'Payment failed',
+  confirmed: 'Confirmed',
+  cancelled: 'Cancelled',
+  completed: 'Completed',
+};
+export const SHIPMENT_STATUS = {
+  pending_payment: 'Awaiting payment',
+  confirmed: 'Order confirmed',
+  packing: 'Being packed',
+  packed: 'Packed',
+  pickup_requested: 'Waiting for pickup',
+  assigned: 'Pickup assigned',
+  picked_up: 'Picked up',
+  out_for_delivery: 'Out for delivery',
+  delivered: 'Delivered',
+  failed_delivery: 'Delivery attempt failed',
+  returning: 'Returning to seller',
+  returned: 'Returned',
+  cancelled: 'Cancelled',
+};
+export const PAYMENT_STATUS = {
+  pending: 'Payment pending',
+  successful: 'Paid',
+  failed: 'Payment failed',
+  cancelled: 'Cancelled',
+  cod_pending: 'Pay on delivery',
+  cod_collected: 'Paid (collected)',
+  refund_pending: 'Refund pending',
+  refunded: 'Refunded',
+  partially_refunded: 'Partly refunded',
+};
+export const statusTone = (s) =>
+  ({
+    confirmed: 'success',
+    completed: 'success',
+    delivered: 'success',
+    successful: 'success',
+    refunded: 'secondary',
+    cancelled: 'secondary',
+    pending_payment: 'warning',
+    pending: 'warning',
+    refund_pending: 'warning',
+    payment_failed: 'danger',
+    failed: 'danger',
+    failed_delivery: 'danger',
+  })[s] || 'info';
+export const etaText = (e) => {
+  if (!e?.earliest) return '';
+  const f = (d) => formatDate(d, { weekday: 'short', day: 'numeric', month: 'short' });
+  return e.earliest === e.latest ? f(e.earliest) : `${f(e.earliest)} – ${f(e.latest)}`;
+};

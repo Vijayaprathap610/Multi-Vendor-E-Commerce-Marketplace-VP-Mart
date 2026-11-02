@@ -25,3 +25,19 @@ export const adminService = {
   messages: () => api.get('/admin/messages').then((r) => r.data.items),
   resolveMessage: (id) => api.patch(`/admin/messages/${id}/resolve`).then(d),
 };
+
+Object.assign(adminService, {
+  coupons: (params) => api.get('/admin/coupons', { params }).then(d),
+  createCoupon: (p) => api.post('/admin/coupons', p).then(d),
+  createProductCoupon: (productId, p) =>
+    api.post(`/admin/products/${productId}/coupons`, p).then(d),
+  updateCoupon: (id, p) => api.patch(`/admin/coupons/${id}`, p).then(d),
+  couponRedemptions: (id) => api.get(`/admin/coupons/${id}/redemptions`).then((r) => r.data.items),
+  orders: (params) => api.get('/admin/orders', { params }).then(d),
+  order: (id) => api.get(`/admin/orders/${id}`).then((r) => r.data.order),
+  payments: (params) => api.get('/admin/payments', { params }).then(d),
+  refunds: () => api.get('/admin/refunds').then((r) => r.data.items),
+  retryRefund: (id) => api.post(`/admin/refunds/${id}/retry`).then(d),
+  settings: () => api.get('/admin/settings').then(d),
+  saveSettings: (p) => api.put('/admin/settings', p).then(d),
+});
