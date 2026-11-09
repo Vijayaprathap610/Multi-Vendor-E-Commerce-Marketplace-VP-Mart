@@ -11,6 +11,7 @@ const baseCookie = () => ({
   secure: env.COOKIE_SECURE,
   sameSite: env.COOKIE_SAMESITE,
   domain: env.COOKIE_DOMAIN || undefined,
+  partitioned: true,
 });
 
 export function signAccessToken(user, sessionId) {
