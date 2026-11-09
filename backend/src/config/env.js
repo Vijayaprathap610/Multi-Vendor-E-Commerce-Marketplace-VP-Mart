@@ -63,7 +63,16 @@ const schema = z.object({
   SMTP_PORT: z.coerce.number().int().optional(),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
-  PUBLIC_API_URL: z.string().url().default('http://localhost:5000'),
+  PUBLIC_API_URL: z
+    .preprocess((v) => {
+      if (v) return cleanStr(v);
+      if (process.env.RENDER_EXTERNAL_URL) return process.env.RENDER_EXTERNAL_URL;
+      const rawEnv = process.env.NODE_ENV ? String(process.env.NODE_ENV).trim().toLowerCase() : '';
+      const isProd = rawEnv === 'prod' || rawEnv === 'production';
+      return isProd
+        ? 'https://multi-vendor-e-commerce-marketplace-vp.onrender.com'
+        : 'http://localhost:5000';
+    }, z.string().url().default('http://localhost:5000')),
   REDIS_URL: z.string().optional().default(''),
   ELASTICSEARCH_URL: z.string().url().optional(),
   ELASTICSEARCH_API_KEY: z.string().optional(),
@@ -112,6 +121,9 @@ if (env.COOKIE_SAMESITE === 'none' || env.NODE_ENV === 'production') {
 if (env.NODE_ENV === 'production') {
   env.COOKIE_SECURE = true;
   env.COOKIE_SAMESITE = 'none';
+  if (env.PUBLIC_API_URL.startsWith('http://localhost') || env.PUBLIC_API_URL.startsWith('http://127.0.0.1')) {
+    env.PUBLIC_API_URL = process.env.RENDER_EXTERNAL_URL || 'https://multi-vendor-e-commerce-marketplace-vp.onrender.com';
+  }
   if (env.MAIL_TRANSPORT === 'smtp' && !(env.SMTP_HOST && env.SMTP_PORT)) {
     throw new Error('SMTP_HOST and SMTP_PORT are required when MAIL_TRANSPORT=smtp');
   }

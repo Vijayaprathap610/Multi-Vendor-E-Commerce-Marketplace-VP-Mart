@@ -10,6 +10,7 @@ import { useCategories } from '../hooks/useCategories.js';
 import { useSeo } from '../hooks/useSeo.js';
 import { catalogService } from '../services/catalogService.js';
 import { formatPaise, rupeesToPaise } from '../utils/money.js';
+import { mediaUrl } from '../utils/format.js';
 
 const SORTS = [
   ['relevance', 'Featured'],
@@ -348,7 +349,7 @@ export default function Browse({ collection, shop = false }) {
               <Link to={`/c/${c.slug}`}>
                 {c.imageUrl && (
                   <img
-                    src={c.imageUrl}
+                    src={mediaUrl(c.imageUrl)}
                     alt=""
                     width="22"
                     height="22"

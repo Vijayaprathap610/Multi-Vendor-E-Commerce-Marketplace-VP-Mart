@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { useLocationPin } from '../context/LocationContext.jsx';
 import { useCategories } from '../hooks/useCategories.js';
+import { mediaUrl } from '../utils/format.js';
 
 // Every item has a real destination. "Kids & Toys" spans two top-level categories, so it opens
 // a search across both. Mobiles is a sub-category of Electronics.
@@ -63,7 +64,7 @@ function AllCategories({ cats }) {
               <Link to={`/c/${c.slug}`} className="vp-allcats-top" onClick={() => setOpen(false)}>
                 {c.imageUrl && (
                   <img
-                    src={c.imageUrl}
+                    src={mediaUrl(c.imageUrl)}
                     alt=""
                     width="20"
                     height="20"

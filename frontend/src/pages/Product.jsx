@@ -14,7 +14,7 @@ import { useSeo } from '../hooks/useSeo.js';
 import { normalizeError } from '../services/api.js';
 import { catalogService } from '../services/catalogService.js';
 import { reviewService } from '../services/marketplaceService.js';
-import { formatDate, formatDateTime } from '../utils/format.js';
+import { formatDate, formatDateTime, mediaUrl } from '../utils/format.js';
 import { formatPaise } from '../utils/money.js';
 
 function Delivery({ delivery, pincode, openPicker }) {
@@ -347,7 +347,7 @@ export default function Product() {
         <div className="vp-gallery">
           <div className="vp-gallery-main">
             {l.images.length ? (
-              <img src={l.images[img].url} alt={l.images[img].alt} width="800" height="800" />
+              <img src={mediaUrl(l.images[img].url)} alt={l.images[img].alt} width="800" height="800" />
             ) : (
               <span className="vp-card-ph" aria-hidden="true">
                 {l.title[0]}
@@ -365,7 +365,7 @@ export default function Product() {
                     aria-label={`Show image ${i + 1}`}
                     aria-current={i === img}
                   >
-                    <img src={im.thumbUrl || im.url} alt="" width="72" height="72" loading="lazy" />
+                    <img src={mediaUrl(im.thumbUrl || im.url)} alt="" width="72" height="72" loading="lazy" />
                   </button>
                 </li>
               ))}
@@ -461,7 +461,7 @@ export default function Product() {
               <span className="text-secondary small">Sold by</span>
               <Link to={`/shop/${detail.data.vendor.slug}`} className="vp-seller-name">
                 {detail.data.vendor.logoUrl && (
-                  <img src={detail.data.vendor.logoUrl} alt="" width="28" height="28" />
+                  <img src={mediaUrl(detail.data.vendor.logoUrl)} alt="" width="28" height="28" />
                 )}
                 {detail.data.vendor.name}
               </Link>

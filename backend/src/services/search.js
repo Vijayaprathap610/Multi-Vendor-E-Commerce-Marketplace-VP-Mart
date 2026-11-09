@@ -9,6 +9,8 @@ import { cached } from './cache.js';
 import { resolveCategoryIds } from './catalogService.js';
 import { esClient, searchEnabled } from './searchSync.js';
 
+import { resolveMediaUrl } from './storage.js';
+
 export const DEAL_MIN_PERCENT = 15;
 export const SORTS = ['relevance', 'price_asc', 'price_desc', 'popularity', 'rating', 'newest'];
 
@@ -26,7 +28,11 @@ export const toPublicListing = (l) => ({
   inStock: !l.manualOutOfStock && l.stock > 0,
   stockLeft: !l.manualOutOfStock && l.stock > 0 && l.stock <= 5 ? l.stock : undefined,
   image: l.images?.[0]
-    ? { url: l.images[0].url, thumbUrl: l.images[0].thumbUrl, alt: l.images[0].alt || l.title }
+    ? {
+        url: resolveMediaUrl(l.images[0].url, l.images[0].key),
+        thumbUrl: resolveMediaUrl(l.images[0].thumbUrl, l.images[0].thumbKey),
+        alt: l.images[0].alt || l.title,
+      }
     : null,
   vendor: { id: String(l.vendorId), name: l.vendorName, slug: l.vendorSlug },
   ratingAvg: l.ratingAvg,

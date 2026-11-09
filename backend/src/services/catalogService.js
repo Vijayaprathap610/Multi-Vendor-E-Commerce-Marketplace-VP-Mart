@@ -2,6 +2,7 @@ import Category from '../models/Category.js';
 import Listing from '../models/Listing.js';
 import { cached, catalogChanged } from './cache.js';
 import { markDirty } from './searchSync.js';
+import { resolveMediaUrl } from './storage.js';
 
 // A listing is public only when the vendor sells it, its category chain is active and the
 // vendor account is active. The flag is stored so public queries stay a single indexed lookup.
@@ -55,7 +56,7 @@ export const publicCategory = (c) => ({
   name: c.name,
   slug: c.slug,
   description: c.description,
-  imageUrl: c.imageUrl,
+  imageUrl: resolveMediaUrl(c.imageUrl, c.imageKey),
   parent: c.parent ? String(c.parent) : null,
   regulation: c.regulation,
   deviceFields: c.deviceFields,

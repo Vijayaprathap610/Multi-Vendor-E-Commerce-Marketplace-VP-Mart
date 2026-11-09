@@ -4,5 +4,4 @@ node_modules
 .env.*.local
 *.log
 coverage
-uploads
 .DS_Store

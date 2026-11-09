@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Price from './Price.jsx';
 import Rating from './Rating.jsx';
+import { mediaUrl } from '../utils/format.js';
 
 export const productPath = (p) => `/product/${p.id}/${p.slug}`;
 
@@ -19,7 +20,7 @@ export default function ProductCard({ product: p }) {
         <div className="vp-card-media">
           {p.image && !imgError ? (
             <img
-              src={p.image.thumbUrl || p.image.url}
+              src={mediaUrl(p.image.thumbUrl || p.image.url)}
               alt={p.image.alt || p.title}
               loading="lazy"
               decoding="async"

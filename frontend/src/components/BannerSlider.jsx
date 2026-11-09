@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { FiChevronLeft, FiChevronRight, FiPause, FiPlay } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { catalogService } from '../services/catalogService.js';
+import { mediaUrl } from '../utils/format.js';
 
 const reduced = () =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -45,7 +46,7 @@ export default function BannerSlider({ banners, interval = 6000 }) {
           const body = (
             <>
               <img
-                src={b.imageUrl}
+                src={mediaUrl(b.imageUrl)}
                 alt=""
                 width="1600"
                 height="520"

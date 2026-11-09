@@ -3,6 +3,7 @@ import { Alert, Button, Form } from 'react-bootstrap';
 import { FiTrash2, FiUploadCloud } from 'react-icons/fi';
 import { normalizeError } from '../services/api.js';
 import { uploadService } from '../services/vendorService.js';
+import { mediaUrl } from '../utils/format.js';
 
 const OK = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX = 5 * 1024 * 1024;
@@ -54,7 +55,7 @@ export default function ImageUploader({
       <ul className="vp-up-list">
         {items.map((it, i) => (
           <li key={it.key}>
-            <img src={it.thumbUrl || it.url} alt="" width="96" height="96" />
+            <img src={mediaUrl(it.thumbUrl || it.url)} alt="" width="96" height="96" />
             {withAlt && (
               <Form.Control
                 size="sm"

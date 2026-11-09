@@ -13,6 +13,7 @@ import { catalogChanged } from '../services/cache.js';
 import { refreshVisibility, syncCategoryVisibility } from '../services/catalogService.js';
 import { claimImages, releaseImage } from '../services/media.js';
 import { adminVendorView } from '../services/vendorService.js';
+import { resolveMediaUrl } from '../services/storage.js';
 
 const dupe = (err, field) => {
   if (err?.code === 11000)
@@ -202,6 +203,7 @@ export async function listBanners(_req, res) {
     items: items.map((b) => ({
       ...b,
       id: String(b._id),
+      imageUrl: resolveMediaUrl(b.imageUrl, b.imageKey),
       live: b.isActive && b.startAt <= now && b.endAt >= now,
     })),
   });
@@ -306,7 +308,7 @@ export async function adminListings(req, res) {
       status: l.status,
       hiddenReason: l.hiddenReason,
       outOfStock: l.manualOutOfStock || l.stock <= 0,
-      image: l.images?.[0]?.thumbUrl ?? null,
+      image: l.images?.[0] ? resolveMediaUrl(l.images[0].thumbUrl, l.images[0].thumbKey) : null,
     })),
     total,
     page,

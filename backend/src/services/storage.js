@@ -50,6 +50,14 @@ function s3Driver(client = new S3Client({ region: env.S3_REGION }), cfg = env) {
   };
 }
 
+export function resolveMediaUrl(storedUrl, key) {
+  if (!storedUrl && !key) return storedUrl;
+  // If it's an external URL (e.g. Unsplash), preserve it
+  if (storedUrl && !storedUrl.includes('/uploads/')) return storedUrl;
+  const cleanKey = key || (storedUrl ? storedUrl.replace(/^https?:\/\/[^/]+\/uploads\//, '').replace(/^\/?uploads\//, '') : '');
+  return cleanKey ? `${env.PUBLIC_API_URL}/uploads/${cleanKey}` : storedUrl;
+}
+
 let driver;
 export const storage = () => (driver ??= env.STORAGE_DRIVER === 's3' ? s3Driver() : localDriver());
 export const makeS3Driver = s3Driver; // exposed so tests can inject a client

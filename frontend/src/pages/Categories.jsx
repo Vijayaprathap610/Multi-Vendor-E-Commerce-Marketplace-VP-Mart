@@ -4,6 +4,7 @@ import { FiArrowRight, FiGrid, FiSearch } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { useCategories } from '../hooks/useCategories.js';
 import { useSeo } from '../hooks/useSeo.js';
+import { mediaUrl } from '../utils/format.js';
 
 export default function Categories() {
   useSeo({
@@ -79,7 +80,7 @@ export default function Categories() {
               <Link to={`/c/${c.slug}`} className="vp-cat-card-cover position-relative">
                 {c.imageUrl ? (
                   <img
-                    src={c.imageUrl}
+                    src={mediaUrl(c.imageUrl)}
                     alt={c.name}
                     loading="lazy"
                     className="w-100 h-100 object-fit-cover"
@@ -120,7 +121,7 @@ export default function Categories() {
                         >
                           {sub.imageUrl && (
                             <img
-                              src={sub.imageUrl}
+                              src={mediaUrl(sub.imageUrl)}
                               alt=""
                               width="16"
                               height="16"

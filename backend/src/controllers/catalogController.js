@@ -14,6 +14,7 @@ import { cached } from '../services/cache.js';
 import { categoryTree, publicCategory } from '../services/catalogService.js';
 import { estimateDelivery } from '../services/deliveryEstimate.js';
 import { DEAL_MIN_PERCENT, searchListings, toPublicListing } from '../services/search.js';
+import { resolveMediaUrl } from '../services/storage.js';
 
 export const config = (_req, res) => {
   const social = Object.fromEntries(
@@ -117,8 +118,8 @@ export async function listingDetail(req, res) {
       description: l.description,
       attributes: l.attributes ?? {},
       images: (l.images ?? []).map((i) => ({
-        url: i.url,
-        thumbUrl: i.thumbUrl,
+        url: resolveMediaUrl(i.url, i.key),
+        thumbUrl: resolveMediaUrl(i.thumbUrl, i.thumbKey),
         alt: i.alt || l.title,
       })),
       expiryDate: l.expiryDate,
@@ -231,7 +232,7 @@ export async function banners(_req, res) {
       id: String(b._id),
       title: b.title,
       description: b.description,
-      imageUrl: b.imageUrl,
+      imageUrl: resolveMediaUrl(b.imageUrl, b.imageKey),
       ctaLabel: b.ctaLabel,
       destination: b.destination,
       kind: b.kind,

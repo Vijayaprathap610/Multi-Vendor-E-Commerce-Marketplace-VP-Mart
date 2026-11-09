@@ -80,3 +80,15 @@ export const etaText = (e) => {
   const f = (d) => formatDate(d, { weekday: 'short', day: 'numeric', month: 'short' });
   return e.earliest === e.latest ? f(e.earliest) : `${f(e.earliest)} – ${f(e.latest)}`;
 };
+
+export function mediaUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  // Convert any stale localhost upload URLs to the active API base URL
+  if (url.startsWith('http://localhost:5000/uploads/')) {
+    const rel = url.slice('http://localhost:5000'.length);
+    const envApi = import.meta.env.VITE_API_URL?.trim() || import.meta.env.VITE_DEV_API?.trim() || '';
+    const origin = envApi.replace(/\/+api\/?$/, '').replace(/\/+$/, '');
+    return origin ? `${origin}${rel}` : rel;
+  }
+  return url;
+}

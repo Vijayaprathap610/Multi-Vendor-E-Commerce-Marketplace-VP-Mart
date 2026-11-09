@@ -4,6 +4,7 @@ import { escapeRegex } from '../utils/text.js';
 import { audit } from '../services/auditService.js';
 import { catalogChanged } from '../services/cache.js';
 import { createListing, updateListing } from '../services/listingService.js';
+import { resolveMediaUrl } from '../services/storage.js';
 import {
   getProfile,
   missingForSubmission,
@@ -89,7 +90,11 @@ const mine = (l) => ({
   manualOutOfStock: l.manualOutOfStock,
   outOfStock: l.manualOutOfStock || l.stock <= 0,
   isPublic: l.isPublic,
-  images: l.images,
+  images: (l.images ?? []).map((i) => ({
+    ...i,
+    url: resolveMediaUrl(i.url, i.key),
+    thumbUrl: resolveMediaUrl(i.thumbUrl, i.thumbKey),
+  })),
   prescriptionRequired: l.prescriptionRequired,
   expiryDate: l.expiryDate,
   attributes: l.attributes,

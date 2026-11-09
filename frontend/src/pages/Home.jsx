@@ -6,6 +6,7 @@ import { EmptyState, ErrorState, Skeleton } from '../components/states.jsx';
 import { useAsync } from '../hooks/useAsync.js';
 import { useSeo } from '../hooks/useSeo.js';
 import { catalogService } from '../services/catalogService.js';
+import { mediaUrl } from '../utils/format.js';
 
 function CategoryTiles({ items }) {
   const [showAll, setShowAll] = useState(false);
@@ -47,7 +48,7 @@ function CategoryTiles({ items }) {
               <div className="vp-tile-img-wrap">
                 {c.imageUrl ? (
                   <img
-                    src={c.imageUrl}
+                    src={mediaUrl(c.imageUrl)}
                     alt={c.name}
                     loading="lazy"
                     width="120"
