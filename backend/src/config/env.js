@@ -25,6 +25,21 @@ const nodeEnv = z
     return s;
   }, z.enum(['development', 'test', 'production']).default('development'));
 
+const cookieSecure = z
+  .preprocess((v) => {
+    if (v === undefined || v === null || v === '') {
+      // In production, secure cookies over HTTPS are required; default to true
+      const rawEnv = process.env.NODE_ENV ? String(process.env.NODE_ENV).trim().toLowerCase() : '';
+      const isProd = rawEnv === 'prod' || rawEnv === 'production';
+      return isProd ? 'true' : 'false';
+    }
+    if (typeof v === 'boolean') return v ? 'true' : 'false';
+    const s = String(v).trim().toLowerCase().replace(/^["']|["']$/g, '');
+    if (s === '1' || s === 'true' || s === 'yes') return 'true';
+    return 'false';
+  }, z.enum(['true', 'false']))
+  .transform((v) => v === 'true');
+
 const schema = z.object({
   NODE_ENV: nodeEnv,
   PORT: z.coerce.number().int().positive().default(5000),
@@ -33,10 +48,14 @@ const schema = z.object({
   JWT_ACCESS_SECRET: z.preprocess(cleanStr, z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters')),
   ACCESS_TOKEN_TTL_MIN: z.coerce.number().int().positive().default(15),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(7),
-  COOKIE_SECURE: bool('false'),
+  COOKIE_SECURE: cookieSecure,
   COOKIE_SAMESITE: z
     .preprocess((v) => {
-      if (!v) return 'lax';
+      if (!v) {
+        const rawEnv = process.env.NODE_ENV ? String(process.env.NODE_ENV).trim().toLowerCase() : '';
+        const isProd = rawEnv === 'prod' || rawEnv === 'production';
+        return isProd ? 'none' : 'lax';
+      }
       return String(v).trim().toLowerCase().replace(/^["']|["']$/g, '');
     }, z.enum(['lax', 'strict', 'none']).default('lax')),
   COOKIE_DOMAIN: z.string().optional(),
