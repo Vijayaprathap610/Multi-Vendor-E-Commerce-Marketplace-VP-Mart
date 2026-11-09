@@ -1,13 +1,34 @@
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
 import path from 'node:path';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import env from '../config/env.js';
+
+function resolveUploadDir() {
+  const candidates = [
+    env.UPLOAD_DIR,
+    path.resolve(import.meta.dirname, '../../uploads'),
+    path.resolve(process.cwd(), 'uploads'),
+    path.resolve(process.cwd(), 'backend', 'uploads'),
+  ];
+  for (const c of candidates) {
+    if (c) {
+      try {
+        const resolved = path.resolve(c);
+        if (fsSync.existsSync(resolved)) return resolved;
+      } catch {
+        // ignore invalid paths
+      }
+    }
+  }
+  return path.resolve(import.meta.dirname, '../../uploads');
+}
 
 // Driver interface: put(key, buffer, contentType), remove(key), urlFor(key).
 // 'local' writes to UPLOAD_DIR and is served by Express at /uploads (development and tests).
 // 's3' uses AWS S3 with credentials from the standard AWS environment/role (never the browser).
 function localDriver() {
-  const root = path.resolve(env.UPLOAD_DIR);
+  const root = resolveUploadDir();
   const full = (key) => {
     const p = path.resolve(root, key);
     if (!p.startsWith(root + path.sep)) throw new Error('Invalid storage key');

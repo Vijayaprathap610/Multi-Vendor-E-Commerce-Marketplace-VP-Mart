@@ -68,6 +68,7 @@ export function createApp({
       '/uploads',
       (_req, res, next) => {
         res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.setHeader('Access-Control-Allow-Origin', '*');
         next();
       },
       express.static(storage().root, {

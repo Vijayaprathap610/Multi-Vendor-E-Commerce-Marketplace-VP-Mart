@@ -78,7 +78,14 @@ const schema = z.object({
   ELASTICSEARCH_API_KEY: z.string().optional(),
   ES_INDEX: z.string().default('vpmart_listings'),
   STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
-  UPLOAD_DIR: z.string().default('./uploads'),
+  UPLOAD_DIR: z.preprocess((v) => {
+    if (!v) return './uploads';
+    const s = cleanStr(v);
+    if (process.platform !== 'win32' && /^[a-zA-Z]:/.test(s)) {
+      return './uploads';
+    }
+    return s;
+  }, z.string().default('./uploads')),
   S3_BUCKET: z.string().optional(),
   S3_REGION: z.string().optional(),
   S3_PUBLIC_BASE_URL: z.string().url().optional(),
