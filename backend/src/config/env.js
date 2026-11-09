@@ -27,12 +27,13 @@ const nodeEnv = z
 
 const cookieSecure = z
   .preprocess((v) => {
-    if (v === undefined || v === null || v === '') {
-      // In production, secure cookies over HTTPS are required; default to true
-      const rawEnv = process.env.NODE_ENV ? String(process.env.NODE_ENV).trim().toLowerCase() : '';
-      const isProd = rawEnv === 'prod' || rawEnv === 'production';
-      return isProd ? 'true' : 'false';
+    const rawEnv = process.env.NODE_ENV ? String(process.env.NODE_ENV).trim().toLowerCase() : '';
+    const isProd = rawEnv === 'prod' || rawEnv === 'production';
+    if (isProd) {
+      // In production, always enforce true for HTTPS cookie security
+      return 'true';
     }
+    if (v === undefined || v === null || v === '') return 'false';
     if (typeof v === 'boolean') return v ? 'true' : 'false';
     const s = String(v).trim().toLowerCase().replace(/^["']|["']$/g, '');
     if (s === '1' || s === 'true' || s === 'yes') return 'true';
@@ -112,12 +113,13 @@ if (env.STORAGE_DRIVER === 's3' && !(env.S3_BUCKET && env.S3_REGION && env.S3_PU
   );
 }
 
-if (env.COOKIE_SAMESITE === 'none' && !env.COOKIE_SECURE) {
-  throw new Error('COOKIE_SECURE must be true when COOKIE_SAMESITE=none');
+if (env.COOKIE_SAMESITE === 'none' || env.NODE_ENV === 'production') {
+  // In production or cross-site setups, cookies must be secure over HTTPS
+  env.COOKIE_SECURE = true;
 }
 
 if (env.NODE_ENV === 'production') {
-  if (!env.COOKIE_SECURE) throw new Error('COOKIE_SECURE must be true in production');
+  env.COOKIE_SECURE = true;
   if (env.MAIL_TRANSPORT === 'smtp' && !(env.SMTP_HOST && env.SMTP_PORT)) {
     throw new Error('SMTP_HOST and SMTP_PORT are required when MAIL_TRANSPORT=smtp');
   }
