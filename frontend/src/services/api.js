@@ -39,6 +39,60 @@ const NO_REFRESH = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/log
 
 export const api = axios.create({ baseURL, withCredentials: true, timeout: 15000 });
 
+// Access and refresh tokens for environments where third-party cookies are restricted
+const TOKEN_KEY = 'vp_access_token';
+const REFRESH_KEY = 'vp_refresh_token';
+
+let inMemoryToken = null;
+let inMemoryRefreshToken = null;
+
+export const setAccessToken = (t) => {
+  inMemoryToken = t || null;
+  try {
+    if (t) sessionStorage.setItem(TOKEN_KEY, t);
+    else sessionStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+};
+
+export const getAccessToken = () => {
+  if (inMemoryToken) return inMemoryToken;
+  try {
+    inMemoryToken = sessionStorage.getItem(TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+  return inMemoryToken;
+};
+
+export const setRefreshToken = (t) => {
+  inMemoryRefreshToken = t || null;
+  try {
+    if (t) localStorage.setItem(REFRESH_KEY, t);
+    else localStorage.removeItem(REFRESH_KEY);
+  } catch {
+    /* ignore */
+  }
+};
+
+export const getRefreshToken = () => {
+  if (inMemoryRefreshToken) return inMemoryRefreshToken;
+  try {
+    inMemoryRefreshToken = localStorage.getItem(REFRESH_KEY);
+  } catch {
+    /* ignore */
+  }
+  return inMemoryRefreshToken;
+};
+
+export const clearTokens = () => {
+  setAccessToken(null);
+  setRefreshToken(null);
+  setCsrfToken(null);
+  sessionHint.clear();
+};
+
 // The CSRF token lives in memory only. The API returns it in response bodies, so this also
 // works when the SPA and the API are on different domains (document.cookie cannot be used there).
 let csrfToken = null;
@@ -62,6 +116,10 @@ async function ensureCsrf() {
 }
 
 api.interceptors.request.use(async (config) => {
+  const token = getAccessToken();
+  if (token && !config.headers['Authorization']) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
   if (!SAFE.has((config.method || 'get').toLowerCase())) {
     config.headers['x-csrf-token'] = await ensureCsrf();
   }
@@ -70,10 +128,13 @@ api.interceptors.request.use(async (config) => {
 
 let refreshPending = null;
 function refreshSession() {
+  const rfToken = getRefreshToken();
   refreshPending ??= api
-    .post('/auth/refresh', {}, { _skipRefresh: true })
+    .post('/auth/refresh', rfToken ? { refreshToken: rfToken } : {}, { _skipRefresh: true })
     .then((r) => {
       setCsrfToken(r.data.csrfToken);
+      if (r.data.accessToken) setAccessToken(r.data.accessToken);
+      if (r.data.refreshToken) setRefreshToken(r.data.refreshToken);
       sessionHint.set();
     })
     .finally(() => {
@@ -109,7 +170,7 @@ api.interceptors.response.use(
         await refreshSession();
         return api(config);
       } catch {
-        sessionHint.clear();
+        clearTokens();
         window.dispatchEvent(new Event('vp:auth-expired'));
       }
     }

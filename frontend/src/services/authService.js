@@ -1,7 +1,17 @@
-import { api, sessionHint, setCsrfToken } from './api.js';
+import {
+  api,
+  clearTokens,
+  getRefreshToken,
+  sessionHint,
+  setAccessToken,
+  setCsrfToken,
+  setRefreshToken,
+} from './api.js';
 
 const keepCsrf = (res) => {
   if (res.data?.csrfToken) setCsrfToken(res.data.csrfToken);
+  if (res.data?.accessToken) setAccessToken(res.data.accessToken);
+  if (res.data?.refreshToken) setRefreshToken(res.data.refreshToken);
   sessionHint.set();
   return res.data;
 };
@@ -9,11 +19,12 @@ const keepCsrf = (res) => {
 export const authService = {
   register: (payload) => api.post('/auth/register', payload).then(keepCsrf),
   login: (payload) => api.post('/auth/login', payload).then(keepCsrf),
-  logout: () =>
-    api.post('/auth/logout').then((r) => {
-      setCsrfToken(null);
-      return r.data;
-    }),
+  logout: () => {
+    const refreshToken = getRefreshToken();
+    return api.post('/auth/logout', refreshToken ? { refreshToken } : {}).finally(() => {
+      clearTokens();
+    });
+  },
   // No hint means this browser never signed in, so skip the doomed network call.
   me: () =>
     sessionHint.has()
@@ -27,12 +38,12 @@ export const authService = {
   updateProfile: (payload) => api.patch('/users/me', payload).then((r) => r.data),
   deactivate: (password) =>
     api.post('/users/me/deactivate', { password }).then((r) => {
-      sessionHint.clear();
+      clearTokens();
       return r.data;
     }),
   deleteAccount: (password) =>
     api.post('/users/me/delete', { password }).then((r) => {
-      sessionHint.clear();
+      clearTokens();
       return r.data;
     }),
 };

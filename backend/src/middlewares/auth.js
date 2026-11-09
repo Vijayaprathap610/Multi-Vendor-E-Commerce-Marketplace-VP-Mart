@@ -6,7 +6,9 @@ import { ACCESS_COOKIE, verifyAccessToken } from '../services/sessionService.js'
 // Verifies the JWT, then confirms against the database that the session is still valid
 // and the account is still allowed to sign in. Role comes from the database, never the token.
 export async function authenticate(req, _res, next) {
-  const token = req.cookies?.[ACCESS_COOKIE];
+  const authHeader = req.get?.('authorization') || req.headers?.authorization;
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  const token = req.cookies?.[ACCESS_COOKIE] || bearerToken;
   if (!token) throw unauthorized();
 
   let payload;

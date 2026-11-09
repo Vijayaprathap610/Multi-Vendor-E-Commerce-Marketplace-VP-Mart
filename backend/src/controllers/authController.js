@@ -48,13 +48,13 @@ export async function register(req, res) {
     throw err;
   }
   const { session, refreshToken } = await createSession(user, req);
-  const csrfToken = setAuthCookies(res, user, session, refreshToken);
+  const { csrfToken, accessToken } = setAuthCookies(res, user, session, refreshToken);
   await audit(req, 'auth.register', {
     actor: user,
     target: { type: 'User', id: user._id },
     metadata: { role },
   });
-  res.status(201).json({ user, csrfToken });
+  res.status(201).json({ user, csrfToken, accessToken, refreshToken });
 }
 
 export async function login(req, res) {
@@ -97,13 +97,13 @@ export async function login(req, res) {
     { $set: { failedLoginCount: 0, lastLoginAt: new Date() }, $unset: { lockUntil: '' } },
   );
   const { session, refreshToken } = await createSession(user, req);
-  const csrfToken = setAuthCookies(res, user, session, refreshToken);
+  const { csrfToken, accessToken } = setAuthCookies(res, user, session, refreshToken);
   await audit(req, 'auth.login', { actor: user, target: { type: 'User', id: user._id } });
-  res.json({ user, csrfToken });
+  res.json({ user, csrfToken, accessToken, refreshToken });
 }
 
 export async function refresh(req, res) {
-  const token = req.cookies?.[REFRESH_COOKIE];
+  const token = req.cookies?.[REFRESH_COOKIE] || req.body?.refreshToken;
   if (!token) throw unauthorized('No refresh token', 'NO_REFRESH');
   const rotated = await rotateRefreshToken(token);
   if (!rotated) {
@@ -116,12 +116,12 @@ export async function refresh(req, res) {
     clearAuthCookies(res);
     throw unauthorized('Account is not active', 'ACCOUNT_INACTIVE');
   }
-  const csrfToken = setAuthCookies(res, user, rotated.session, rotated.refreshToken);
-  res.json({ user, csrfToken });
+  const { csrfToken, accessToken } = setAuthCookies(res, user, rotated.session, rotated.refreshToken);
+  res.json({ user, csrfToken, accessToken, refreshToken: rotated.refreshToken });
 }
 
 export async function logout(req, res) {
-  const token = req.cookies?.[REFRESH_COOKIE];
+  const token = req.cookies?.[REFRESH_COOKIE] || req.body?.refreshToken;
   if (token)
     await Session.updateOne(
       { tokenHash: sha256(token), revokedAt: { $exists: false } },

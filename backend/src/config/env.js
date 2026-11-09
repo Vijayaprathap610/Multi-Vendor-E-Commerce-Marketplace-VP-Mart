@@ -42,11 +42,12 @@ const schema = z.object({
   COOKIE_SECURE: cookieSecure,
   COOKIE_SAMESITE: z
     .preprocess((v) => {
-      if (!v) {
-        const rawEnv = process.env.NODE_ENV ? String(process.env.NODE_ENV).trim().toLowerCase() : '';
-        const isProd = rawEnv === 'prod' || rawEnv === 'production';
-        return isProd ? 'none' : 'lax';
+      const rawEnv = process.env.NODE_ENV ? String(process.env.NODE_ENV).trim().toLowerCase() : '';
+      const isProd = rawEnv === 'prod' || rawEnv === 'production';
+      if (isProd) {
+        return 'none';
       }
+      if (!v) return 'lax';
       return String(v).trim().toLowerCase().replace(/^["']|["']$/g, '');
     }, z.enum(['lax', 'strict', 'none']).default('lax')),
   COOKIE_DOMAIN: z.string().optional(),
@@ -110,6 +111,7 @@ if (env.COOKIE_SAMESITE === 'none' || env.NODE_ENV === 'production') {
 
 if (env.NODE_ENV === 'production') {
   env.COOKIE_SECURE = true;
+  env.COOKIE_SAMESITE = 'none';
   if (env.MAIL_TRANSPORT === 'smtp' && !(env.SMTP_HOST && env.SMTP_PORT)) {
     throw new Error('SMTP_HOST and SMTP_PORT are required when MAIL_TRANSPORT=smtp');
   }

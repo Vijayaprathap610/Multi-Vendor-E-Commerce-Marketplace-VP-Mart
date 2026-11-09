@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext.jsx';
 import { notificationService } from '../services/orderService.js';
+import { getAccessToken } from '../services/api.js';
 
 export const SocketContext = createContext(null);
 
@@ -45,12 +46,14 @@ export function SocketProvider({ children }) {
       }
     }
 
+    const token = getAccessToken();
     const s = io(socketUrl, {
       path: '/socket.io',
       withCredentials: true,
       transports: ['websocket', 'polling'],
       autoConnect: true,
       reconnectionAttempts: 5,
+      auth: token ? { token } : undefined,
     });
 
     s.on('connect', () => {

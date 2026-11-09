@@ -34,7 +34,8 @@ export function setCsrfCookie(res) {
 }
 
 export function setAuthCookies(res, user, session, refreshToken) {
-  res.cookie(ACCESS_COOKIE, signAccessToken(user, session._id), {
+  const accessToken = signAccessToken(user, session._id);
+  res.cookie(ACCESS_COOKIE, accessToken, {
     ...baseCookie(),
     httpOnly: true,
     path: '/',
@@ -46,7 +47,8 @@ export function setAuthCookies(res, user, session, refreshToken) {
     path: '/api/auth',
     maxAge: env.REFRESH_TOKEN_TTL_DAYS * 86400 * 1000,
   });
-  return setCsrfCookie(res);
+  const csrfToken = setCsrfCookie(res);
+  return { csrfToken, accessToken };
 }
 
 export function clearAuthCookies(res) {
