@@ -1,23 +1,44 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
-// default() must come BEFORE transform(); otherwise the default is the raw string 'false' (truthy).
+// Preprocess strings to trim whitespace and remove accidental quotes from .env
+const cleanStr = (v) => (typeof v === 'string' ? v.trim().replace(/^["']|["']$/g, '') : v);
+
 const bool = (def) =>
   z
-    .enum(['true', 'false'])
-    .default(def)
+    .preprocess((v) => {
+      if (v === undefined || v === null || v === '') return def;
+      if (typeof v === 'boolean') return v ? 'true' : 'false';
+      const s = String(v).trim().toLowerCase().replace(/^["']|["']$/g, '');
+      if (s === '1' || s === 'true' || s === 'yes') return 'true';
+      return 'false';
+    }, z.enum(['true', 'false']).default(def))
     .transform((v) => v === 'true');
 
+const nodeEnv = z
+  .preprocess((v) => {
+    if (v === undefined || v === null || v === '') return 'development';
+    const s = String(v).trim().toLowerCase().replace(/^["']|["']$/g, '');
+    if (s === 'prod' || s === 'production') return 'production';
+    if (s === 'test') return 'test';
+    if (s === 'dev' || s === 'development') return 'development';
+    return s;
+  }, z.enum(['development', 'test', 'production']).default('development'));
+
 const schema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  NODE_ENV: nodeEnv,
   PORT: z.coerce.number().int().positive().default(5000),
-  MONGODB_URI: z.string().min(1),
-  CLIENT_ORIGIN: z.string().min(1).default('http://localhost:5173'),
-  JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters'),
+  MONGODB_URI: z.preprocess(cleanStr, z.string().min(1)),
+  CLIENT_ORIGIN: z.preprocess(cleanStr, z.string().min(1).default('http://localhost:5173')),
+  JWT_ACCESS_SECRET: z.preprocess(cleanStr, z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters')),
   ACCESS_TOKEN_TTL_MIN: z.coerce.number().int().positive().default(15),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(7),
   COOKIE_SECURE: bool('false'),
-  COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).default('lax'),
+  COOKIE_SAMESITE: z
+    .preprocess((v) => {
+      if (!v) return 'lax';
+      return String(v).trim().toLowerCase().replace(/^["']|["']$/g, '');
+    }, z.enum(['lax', 'strict', 'none']).default('lax')),
   COOKIE_DOMAIN: z.string().optional(),
   BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
