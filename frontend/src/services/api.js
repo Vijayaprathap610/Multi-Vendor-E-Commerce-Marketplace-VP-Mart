@@ -49,8 +49,8 @@ let inMemoryRefreshToken = null;
 export const setAccessToken = (t) => {
   inMemoryToken = t || null;
   try {
-    if (t) sessionStorage.setItem(TOKEN_KEY, t);
-    else sessionStorage.removeItem(TOKEN_KEY);
+    if (t) localStorage.setItem(TOKEN_KEY, t);
+    else localStorage.removeItem(TOKEN_KEY);
   } catch {
     /* ignore */
   }
@@ -59,7 +59,7 @@ export const setAccessToken = (t) => {
 export const getAccessToken = () => {
   if (inMemoryToken) return inMemoryToken;
   try {
-    inMemoryToken = sessionStorage.getItem(TOKEN_KEY);
+    inMemoryToken = localStorage.getItem(TOKEN_KEY);
   } catch {
     /* ignore */
   }
@@ -117,7 +117,7 @@ async function ensureCsrf() {
 
 api.interceptors.request.use(async (config) => {
   const token = getAccessToken();
-  if (token && !config.headers['Authorization']) {
+  if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
   if (!SAFE.has((config.method || 'get').toLowerCase())) {
@@ -168,6 +168,10 @@ api.interceptors.response.use(
       config._refreshed = true;
       try {
         await refreshSession();
+        const newToken = getAccessToken();
+        if (newToken) {
+          config.headers['Authorization'] = `Bearer ${newToken}`;
+        }
         return api(config);
       } catch {
         clearTokens();
