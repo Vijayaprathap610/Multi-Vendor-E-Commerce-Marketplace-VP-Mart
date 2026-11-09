@@ -4,7 +4,9 @@ import { CSRF_COOKIE } from '../services/sessionService.js';
 
 const SAFE = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-// Public endpoints that do not have an active session yet, plus signed webhooks
+// Public endpoints that do not have an active session yet, plus signed webhooks.
+// refresh and logout authenticate via HttpOnly refresh cookie — no CSRF token available
+// at the moment they are called (access token may have just expired).
 const DEFAULT_EXEMPT = [
   '/api/webhooks/',
   '/webhooks/',
@@ -18,6 +20,10 @@ const DEFAULT_EXEMPT = [
   '/auth/reset-password',
   '/api/auth/csrf',
   '/auth/csrf',
+  '/api/auth/refresh',
+  '/auth/refresh',
+  '/api/auth/logout',
+  '/auth/logout',
 ];
 
 // Double-submit cookie. Signed provider webhooks and initial unauthenticated auth endpoints
