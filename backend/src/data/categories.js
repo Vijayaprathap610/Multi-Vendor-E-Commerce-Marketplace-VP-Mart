@@ -1,8 +1,21 @@
 // Required marketplace categories with sensible sub-categories. Admin can edit all of this.
 // GST rates are starting points only; confirm them for your products with a tax professional.
 // shipping.maxZone limits how far a category can travel (ice cream needs a cold chain).
-const C = (name, slug, extra = {}, subs = []) => ({ name, slug, ...extra, subs });
-const S = (name, slug, extra = {}) => ({ name, slug, ...extra });
+import { CATEGORY_IMAGES } from '../scripts/seedCategoryImages.js';
+
+const C = (name, slug, extra = {}, subs = []) => ({
+  name,
+  slug,
+  imageUrl: extra.imageUrl || CATEGORY_IMAGES[slug] || null,
+  ...extra,
+  subs,
+});
+const S = (name, slug, extra = {}) => ({
+  name,
+  slug,
+  imageUrl: extra.imageUrl || CATEGORY_IMAGES[slug] || null,
+  ...extra,
+});
 // Sub-categories inherit regulation, GST and shipping rules from their parent unless they override them.
 
 export const CATEGORY_SEED = [

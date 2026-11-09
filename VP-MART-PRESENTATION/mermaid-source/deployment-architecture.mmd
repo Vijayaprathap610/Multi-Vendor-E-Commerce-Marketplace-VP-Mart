@@ -1,0 +1,37 @@
+flowchart TD
+    %% Production Deployment Architecture
+    Developer([DevOps / Engineer]) -->|git push origin main| GitHub["GitHub Repository\n(Monorepo Source Control)"]
+
+    GitHub -->|Auto-Deploy Webhook| NetlifyCDN
+    GitHub -->|Auto-Deploy Webhook| RenderCloud
+
+    subgraph NetlifyCDN["Frontend Production Hosting: Netlify Edge Network"]
+        ViteBuild["Vite 8 Build Pipeline\n(509 Modules / Sub-second)"]
+        SPARedirect["_redirects SPA Rewrite Rule\n(/* -> /index.html 200)"]
+        PublicOrigin["Custom Domain / *.netlify.app\n(Global CDN Caching)"]
+        NetlifyEnv["Environment Config:\nVITE_API_URL=https://vpmart.onrender.com/api\nVITE_SOCKET_URL=https://vpmart.onrender.com"]
+    end
+
+    subgraph RenderCloud["Backend Production Hosting: Render Web Service"]
+        NodeContainer["Node.js 22 LTS Runtime\n(Express 5 REST API)"]
+        WSService["Socket.IO Server\n(WebSockets WSS)"]
+        HealthCheck["Health Check: /api/health\n(Continuous Monitoring)"]
+        RenderEnv["Environment Config:\nMONGODB_URI=mongodb+srv://...\nJWT_SECRET=64-char-hex\nCLIENT_ORIGIN=https://vpmart.netlify.app\nCOOKIE_SAMESITE=none\nCOOKIE_SECURE=true"]
+    end
+
+    subgraph AtlasCloud["Database Production Hosting: MongoDB Atlas"]
+        ReplicaCluster[("MongoDB Atlas Replica Set (3 Nodes)\n• 27 Collections\n• Multi-Document ACID Transactions\n• Whitelist IP: 0.0.0.0/0")]
+    end
+
+    subgraph CloudServices["Integrated Third-Party Cloud Services"]
+        RazorpayGateway["Razorpay Cloud Payments\n(Live Gateway API & Webhook Dispatch)"]
+        AWSS3["AWS S3 (Optional Persistent Media)"]
+        RedisCloud["Redis Cloud (Optional Cache)"]
+    end
+
+    PublicOrigin <-->|HTTPS REST API + HttpOnly Cookies\nwithCredentials: true| NodeContainer
+    PublicOrigin <-->|WSS WebSockets Real-Time| WSService
+    NodeContainer -->|TLS Encrypted Connection| ReplicaCluster
+    NodeContainer <-->|Payment Verification & Webhooks| RazorpayGateway
+    NodeContainer -.->|STORAGE_DRIVER=s3| AWSS3
+    NodeContainer -.->|REDIS_URL| RedisCloud

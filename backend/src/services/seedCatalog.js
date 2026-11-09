@@ -10,8 +10,12 @@ export async function seedCategories() {
   for (const top of CATEGORY_SEED) {
     const { subs, name, slug, ...rest } = top;
     let parent = await Category.findOne({ slug });
-    if (parent) existing++;
-    else {
+    if (parent) {
+      existing++;
+      if (!parent.imageUrl && rest.imageUrl) {
+        await Category.updateOne({ _id: parent._id }, { $set: { imageUrl: rest.imageUrl } });
+      }
+    } else {
       parent = await Category.create({ name, slug, sortOrder: order, regulation: 'none', ...rest });
       created++;
     }
@@ -19,8 +23,12 @@ export async function seedCategories() {
     let subOrder = 0;
     for (const s of subs) {
       const { name: sName, slug: sSlug, ...sRest } = s;
-      if (await Category.exists({ slug: sSlug })) {
+      const subExists = await Category.findOne({ slug: sSlug });
+      if (subExists) {
         existing++;
+        if (!subExists.imageUrl && sRest.imageUrl) {
+          await Category.updateOne({ _id: subExists._id }, { $set: { imageUrl: sRest.imageUrl } });
+        }
       } else {
         await Category.create({
           name: sName,

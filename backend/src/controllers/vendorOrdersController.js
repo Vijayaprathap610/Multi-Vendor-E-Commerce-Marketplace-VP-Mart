@@ -1,7 +1,8 @@
 import Order from '../models/Order.js';
 import OrderItem from '../models/OrderItem.js';
 import Shipment from '../models/Shipment.js';
-import { notFound } from '../utils/AppError.js';
+import { notFound, badRequest } from '../utils/AppError.js';
+import { emitToOrder } from '../sockets/socket.js';
 
 // Vendors see only their own shipments. They get the buyer's first name and city (enough to pack
 // and plan dispatch) but never the street address or phone number.
@@ -67,4 +68,27 @@ export async function getVendorOrder(req, res) {
   const s = await Shipment.findOne({ _id: req.params.id, vendorId: req.user._id }).lean();
   if (!s) throw notFound('Order not found');
   res.json({ shipment: s });
+}
+
+export async function updateShipmentStatus(req, res) {
+  const shipment = await Shipment.findOne({ _id: req.params.id, vendorId: req.user._id });
+  if (!shipment) throw notFound('Shipment not found');
+
+  const { status } = req.body;
+  if (status === 'packing' && shipment.status !== 'confirmed') {
+    throw badRequest(`Cannot start packing a shipment with status ${shipment.status}`);
+  }
+  if (status === 'packed' && !['confirmed', 'packing'].includes(shipment.status)) {
+    throw badRequest(`Cannot mark packed from status ${shipment.status}`);
+  }
+
+  shipment.status = status;
+  await shipment.save();
+
+  emitToOrder(String(shipment.orderId), 'shipment:status', {
+    shipmentId: String(shipment._id),
+    status,
+  });
+
+  res.json({ shipment });
 }

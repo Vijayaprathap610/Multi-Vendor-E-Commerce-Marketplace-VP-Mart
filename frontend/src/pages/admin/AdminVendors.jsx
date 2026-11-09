@@ -15,6 +15,8 @@ function Detail({ id, onClose, onChanged }) {
   const [warn, setWarn] = useState('');
   const [msg, setMsg] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [safeguards, setSafeguards] = useState(null);
   const v = d.data?.vendor;
   const p = v?.profile;
   async function act(fn, ok) {
@@ -33,8 +35,30 @@ function Detail({ id, onClose, onChanged }) {
   }
   const status = (s) =>
     act(() => adminService.setUserStatus(id, s, reason || undefined), `Vendor is now ${s}.`);
+
+  async function handleDelete() {
+    setBusy(true);
+    setSafeguards(null);
+    setMsg(null);
+    try {
+      await adminService.deleteVendor(id, reason || 'Admin deleted vendor');
+      setShowDelete(false);
+      setMsg({ v: 'success', t: 'Vendor safely decommissioned and archived.' });
+      d.reload();
+      onChanged();
+    } catch (err) {
+      const data = err.response?.data?.error;
+      if (data?.safeguards) {
+        setSafeguards(data.safeguards);
+      } else {
+        setMsg({ v: 'danger', t: normalizeError(err).message });
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
-    <Modal show onHide={onClose} size="lg" scrollable aria-labelledby="vd-title">
+    <Modal show onHide={onClose} size="lg" scrollable centered className="vp-modal-scrollable" aria-labelledby="vd-title">
       <Modal.Header closeButton>
         <Modal.Title as="h2" className="h5" id="vd-title">
           {p?.shopName || v?.name || 'Vendor'}
@@ -163,12 +187,56 @@ function Detail({ id, onClose, onChanged }) {
                   Reinstate
                 </Button>
               )}
+              {v.status !== 'deleted' && (
+                <Button
+                  variant="outline-danger"
+                  className="ms-auto"
+                  disabled={busy}
+                  onClick={() => setShowDelete(true)}
+                >
+                  Delete Vendor
+                </Button>
+              )}
               {v.status === 'pending_approval' && !p?.submittedAt && (
                 <small className="text-secondary align-self-center">
                   Can be approved after the profile is submitted.
                 </small>
               )}
             </div>
+
+            <Modal show={showDelete} onHide={() => { setShowDelete(false); setSafeguards(null); }} centered scrollable className="vp-modal-scrollable">
+              <Modal.Header closeButton>
+                <Modal.Title as="h2" className="h5 text-danger">Delete Vendor with Safeguards</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                {safeguards ? (
+                  <Alert variant="danger">
+                    <strong className="d-block mb-1">Deletion Blocked by System Safeguards:</strong>
+                    <ul className="mb-0 ps-3">
+                      {safeguards.map((s, idx) => (
+                        <li key={idx}>{s}</li>
+                      ))}
+                    </ul>
+                  </Alert>
+                ) : (
+                  <p>
+                    Are you sure you want to permanently delete and anonymize this vendor account?
+                    VP Mart’s transactional integrity checks will verify there are no active shipments,
+                    pending refunds, or unpaid balances before proceeding.
+                  </p>
+                )}
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="outline-secondary" onClick={() => { setShowDelete(false); setSafeguards(null); }}>
+                  {safeguards ? 'Close' : 'Cancel'}
+                </Button>
+                {!safeguards && (
+                  <Button variant="danger" disabled={busy} onClick={handleDelete}>
+                    {busy ? 'Verifying Safeguards…' : 'Confirm Delete'}
+                  </Button>
+                )}
+              </Modal.Footer>
+            </Modal>
             <Form
               onSubmit={(e) => {
                 e.preventDefault();

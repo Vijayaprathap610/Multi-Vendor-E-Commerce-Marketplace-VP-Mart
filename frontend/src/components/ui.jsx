@@ -11,7 +11,7 @@ export function ConfirmModal({
   onCancel,
 }) {
   return (
-    <Modal show={show} onHide={onCancel} centered>
+    <Modal show={show} onHide={onCancel} centered scrollable className="vp-modal-scrollable">
       <Modal.Header closeButton>
         <Modal.Title as="h2" className="h5">
           {title}

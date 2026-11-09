@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Price from './Price.jsx';
 import Rating from './Rating.jsx';
@@ -5,6 +6,7 @@ import Rating from './Rating.jsx';
 export const productPath = (p) => `/product/${p.id}/${p.slug}`;
 
 export default function ProductCard({ product: p }) {
+  const [imgError, setImgError] = useState(false);
   const initials = p.title
     .split(' ')
     .slice(0, 2)
@@ -15,14 +17,15 @@ export default function ProductCard({ product: p }) {
     <article className="vp-card">
       <Link to={productPath(p)} className="vp-card-link">
         <div className="vp-card-media">
-          {p.image ? (
+          {p.image && !imgError ? (
             <img
               src={p.image.thumbUrl || p.image.url}
-              alt=""
+              alt={p.image.alt || p.title}
               loading="lazy"
               decoding="async"
               width="400"
               height="400"
+              onError={() => setImgError(true)}
             />
           ) : (
             <span className="vp-card-ph" aria-hidden="true">

@@ -1,6 +1,6 @@
 // Import this file FIRST in every test file: it sets the environment before config loads.
 process.env.NODE_ENV = 'test';
-process.env.MONGODB_URI ??= `mongodb://127.0.0.1:27017/vpmart_test_${process.pid}?replicaSet=rs0`;
+process.env.MONGODB_URI ??= `mongodb://127.0.0.1:27018/vpmart_test_${process.pid}?replicaSet=rs0`;
 process.env.CLIENT_ORIGIN = 'http://localhost:5173';
 process.env.JWT_ACCESS_SECRET = 'test-secret-test-secret-test-secret-123456';
 process.env.BCRYPT_ROUNDS = '4';
@@ -19,7 +19,8 @@ const { createApp } = await import('../src/app.js');
 const { connectDb, disconnectDb } = await import('../src/config/db.js');
 const models = await import('../src/models/index.js');
 const { User, Session, AuditLog, allModels } = models;
-const { flushForTests, closeRedis } = await import('../src/services/cache.js');
+const { flushForTests, closeRedis, setRedisForTests, MemoryRedis } = await import('../src/services/cache.js');
+setRedisForTests(new MemoryRedis());
 const { seedCategories } = await import('../src/services/seedCatalog.js');
 const fsp = await import('node:fs/promises');
 const sharp = (await import('sharp')).default;

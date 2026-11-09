@@ -76,8 +76,8 @@ function CategoryModal({ cat, tops, onClose, onSaved }) {
     }
   }
   return (
-    <Modal show onHide={onClose} centered>
-      <Form onSubmit={save} noValidate>
+    <Modal show onHide={onClose} size="lg" scrollable centered className="vp-modal-scrollable">
+      <Form onSubmit={save} noValidate className="vp-modal-form">
         <Modal.Header closeButton>
           <Modal.Title as="h2" className="h5">
             {edit ? 'Edit category' : 'New category'}
@@ -85,7 +85,7 @@ function CategoryModal({ cat, tops, onClose, onSaved }) {
         </Modal.Header>
         <Modal.Body>
           {err && (
-            <Alert variant="danger" role="alert">
+            <Alert variant="danger" role="alert" className="mb-3">
               {err}
             </Alert>
           )}
@@ -120,8 +120,8 @@ function CategoryModal({ cat, tops, onClose, onSaved }) {
             checked={f.deviceFields}
             onChange={set('deviceFields')}
           />
-          <div className="d-flex gap-2">
-            <div className="flex-fill">
+          <div className="row g-3 mb-3">
+            <div className="col-12 col-md-4">
               <FormField
                 label="GST %"
                 inputMode="decimal"
@@ -130,8 +130,8 @@ function CategoryModal({ cat, tops, onClose, onSaved }) {
                 error={errors.gstPercent}
               />
             </div>
-            <div className="flex-fill">
-              <Form.Group className="mb-3" controlId="zone">
+            <div className="col-12 col-md-4">
+              <Form.Group controlId="zone">
                 <Form.Label>Delivery range</Form.Label>
                 <Form.Select value={f.maxZone} onChange={set('maxZone')}>
                   {ZONES.map(([v, l]) => (
@@ -142,7 +142,7 @@ function CategoryModal({ cat, tops, onClose, onSaved }) {
                 </Form.Select>
               </Form.Group>
             </div>
-            <div className="flex-fill">
+            <div className="col-12 col-md-4">
               <FormField
                 label="Extra days"
                 inputMode="numeric"
@@ -154,7 +154,7 @@ function CategoryModal({ cat, tops, onClose, onSaved }) {
           </div>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="outline-secondary" onClick={onClose}>
+          <Button variant="outline-secondary" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
           <Button type="submit" variant="dark" disabled={busy}>

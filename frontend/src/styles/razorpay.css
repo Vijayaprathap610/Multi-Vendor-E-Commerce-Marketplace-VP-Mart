@@ -1,0 +1,629 @@
+/* ==========================================================================
+   Razorpay Dummy Gateway Modal Styles
+   Matches Razorpay Standard Checkout design & UX (Mobile + Desktop)
+   ========================================================================== */
+
+.rzp-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(10, 20, 40, 0.72);
+  backdrop-filter: blur(4px);
+  z-index: 1060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: rzpFadeIn 0.2s ease-out;
+}
+
+@keyframes rzpFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.rzp-container {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 720px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  animation: rzpSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes rzpSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Header */
+.rzp-header {
+  background: linear-gradient(135deg, #0c2340 0%, #173865 100%);
+  color: #ffffff;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+
+.rzp-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rzp-logo-badge {
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -0.5px;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+}
+
+.rzp-merchant-name {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.rzp-order-ref {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 2px 0 0;
+}
+
+.rzp-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-align: right;
+}
+
+.rzp-amount-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 2px;
+}
+
+.rzp-amount-val {
+  font-size: 20px;
+  font-weight: 700;
+  color: #38bdf8;
+  line-height: 1;
+}
+
+.rzp-close-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: #ffffff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.rzp-close-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Test Mode Banner */
+.rzp-test-banner {
+  background: #fef3c7;
+  border-bottom: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rzp-test-pill {
+  background: #f59e0b;
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Body (2-column layout) */
+.rzp-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 380px;
+}
+
+/* Sidebar navigation */
+.rzp-sidebar {
+  width: 220px;
+  background: #f8fafc;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.rzp-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.rzp-nav-item:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.rzp-nav-item.is-active {
+  background: #ffffff;
+  color: #0c2340;
+  font-weight: 600;
+  border-left-color: #2563eb;
+  box-shadow: inset -1px 0 0 #ffffff;
+}
+
+.rzp-nav-icon {
+  font-size: 18px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+}
+
+.rzp-nav-item.is-active .rzp-nav-icon {
+  color: #2563eb;
+}
+
+.rzp-nav-subtitle {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 400;
+  display: block;
+}
+
+/* Content Area */
+.rzp-main {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.rzp-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* UPI Apps */
+.rzp-upi-apps {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.rzp-upi-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.rzp-upi-btn:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.rzp-upi-btn.is-selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+.rzp-upi-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.rzp-upi-gpay { background: #4285f4; }
+.rzp-upi-phonepe { background: #5f259f; }
+.rzp-upi-paytm { background: #00b9f5; }
+.rzp-upi-bhim { background: #00796b; }
+
+.rzp-divider-text {
+  text-align: center;
+  position: relative;
+  margin: 14px 0;
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.rzp-divider-text::before,
+.rzp-divider-text::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 42%;
+  height: 1px;
+  background: #e2e8f0;
+}
+.rzp-divider-text::before { left: 0; }
+.rzp-divider-text::after { right: 0; }
+
+/* Chips */
+.rzp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.rzp-chip {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  border-radius: 12px;
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.rzp-chip:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Card Form */
+.rzp-form-group {
+  margin-bottom: 12px;
+}
+
+.rzp-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+.rzp-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.rzp-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.rzp-card-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.rzp-autofill-btn {
+  background: none;
+  border: 1px dashed #2563eb;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 12px;
+  display: inline-block;
+}
+.rzp-autofill-btn:hover {
+  background: #eff6ff;
+}
+
+/* Netbanking Grid */
+.rzp-banks-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.rzp-bank-card {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 64px;
+}
+
+.rzp-bank-card:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.rzp-bank-card.is-selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+.rzp-bank-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.rzp-bank-name {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: #334155;
+}
+
+/* Wallets List */
+.rzp-wallet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rzp-wallet-row:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.rzp-wallet-row.is-selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+/* Footer / CTA */
+.rzp-footer {
+  padding: 14px 20px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rzp-sim-ctrl {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  font-size: 11px;
+  color: #475569;
+}
+
+.rzp-sim-options {
+  display: flex;
+  gap: 12px;
+}
+
+.rzp-sim-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.rzp-pay-cta {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.rzp-pay-cta:hover {
+  background: #1d4ed8;
+}
+
+.rzp-pay-cta:active {
+  transform: scale(0.99);
+}
+
+.rzp-security-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Interactive States: Processing, Success, Failure */
+.rzp-state-screen {
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 380px;
+}
+
+.rzp-spinner {
+  width: 56px;
+  height: 56px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: rzpSpin 0.8s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes rzpSpin {
+  to { transform: rotate(360deg); }
+}
+
+.rzp-success-badge {
+  width: 64px;
+  height: 64px;
+  background: #22c55e;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.35);
+  animation: rzpPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.rzp-fail-badge {
+  width: 64px;
+  height: 64px;
+  background: #ef4444;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.35);
+  animation: rzpPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes rzpPop {
+  0% { transform: scale(0.4); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 640px) {
+  .rzp-container {
+    max-height: 96vh;
+    border-radius: 12px 12px 0 0;
+    margin-top: auto;
+  }
+  .rzp-body {
+    flex-direction: column;
+    min-height: auto;
+  }
+  .rzp-sidebar {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .rzp-nav-item {
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    padding: 10px 14px;
+    white-space: nowrap;
+  }
+  .rzp-nav-item.is-active {
+    border-left-color: transparent;
+    border-bottom-color: #2563eb;
+  }
+  .rzp-upi-apps {
+    grid-template-columns: 1fr;
+  }
+  .rzp-banks-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

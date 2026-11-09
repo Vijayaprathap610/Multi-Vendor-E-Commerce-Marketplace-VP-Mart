@@ -160,3 +160,9 @@ export const vendorListingsQuery = z
     limit: z.coerce.number().int().min(1).max(100).default(20),
   })
   .strict();
+
+export const shipmentStatusBody = z
+  .object({
+    status: z.enum(['packing', 'packed']),
+  })
+  .strict();

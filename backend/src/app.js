@@ -23,12 +23,32 @@ export function createApp({
   app.disable('x-powered-by');
   if (env.NODE_ENV === 'production') app.set('trust proxy', 1);
 
+  const allowedOrigins = (env.CLIENT_ORIGIN || 'http://localhost:5173')
+    .split(',')
+    .map((o) => o.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+
   app.use(helmet());
   app.use(
     cors({
-      origin: env.CLIENT_ORIGIN,
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        const clean = origin.replace(/\/+$/, '');
+        if (allowedOrigins.includes(clean) || allowedOrigins.includes('*')) {
+          return callback(null, true);
+        }
+        // Support Netlify preview deploy subdomains if Netlify site is configured
+        if (
+          allowedOrigins.some((a) => a.includes('.netlify.app')) &&
+          clean.endsWith('.netlify.app')
+        ) {
+          return callback(null, true);
+        }
+        return callback(new Error(`Origin ${origin} not allowed by CORS`));
+      },
       credentials: true,
-      methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+      methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token', 'x-requested-with'],
     }),
   );
   app.use(pinoHttp({ logger }));

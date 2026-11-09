@@ -1,0 +1,44 @@
+# Render Blueprint for VP Mart Backend Web Service
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: vp-mart-backend
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: "none"
+      - key: PUBLIC_API_URL
+        sync: false
+      - key: STORAGE_DRIVER
+        value: local
+      - key: UPLOAD_DIR
+        value: ./uploads
+      - key: ENABLE_DUMMY_PAYMENT
+        value: "true"
+      - key: MAIL_TRANSPORT
+        value: outbox
+      - key: BCRYPT_ROUNDS
+        value: "12"
+      - key: COMMISSION_PERCENT
+        value: "10"
+      - key: PENDING_PAYMENT_TTL_MIN
+        value: "30"

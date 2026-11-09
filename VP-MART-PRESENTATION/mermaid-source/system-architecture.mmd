@@ -1,0 +1,68 @@
+flowchart TB
+    %% VP Mart System Architecture
+    subgraph Clients["1. Frontend Client Layer (Netlify Edge Network)"]
+        CustomerUI["Customer Storefront\n(React 19 / Bootstrap 5 / Vite 8)"]
+        VendorUI["Vendor Portal\n(Product Catalog & Inventory)"]
+        AdminUI["Admin Dashboard\n(Moderation & Analytics)"]
+        AgentUI["Delivery Agent Web App\n(Dispatch & OTP Verification)"]
+    end
+
+    subgraph StateAndServices["2. Client State & Networking"]
+        Router["React Router 7\n(Role-Based Protected Routes)"]
+        Context["Context Providers\n(Auth, Cart, Socket, Toast)"]
+        AxiosClient["Axios API Client\n(CSRF Header, withCredentials)"]
+        SocketClient["Socket.IO Client\n(Real-Time Event Listener)"]
+    end
+
+    subgraph Gateway["3. Security & Gateway Layer (Render Web Service)"]
+        CORS["CORS Middleware\n(Multi-Origin Whitelist)"]
+        Helmet["Helmet Security\n(CSP, HSTS, X-Frame-Options)"]
+        RateLimit["Rate Limiting\n(Auth, API & Strict Tiers)"]
+        CSRF["CSRF Double-Submit Middleware\n(Header vs Cookie Match)"]
+        AuthMiddleware["JWT Authentication\n(HttpOnly Cookie Verification)"]
+        ZodMiddleware["Zod Schema Validation\n(Strict Runtime Payload Guards)"]
+    end
+
+    subgraph CoreBackend["4. Backend Controllers & Services (Express 5 / Node.js 22 LTS)"]
+        AuthController["Auth & Session Controller"]
+        CatalogController["Catalog, Search & Category Controller"]
+        CartController["Cart & Pricing Math Controller (Paise)"]
+        OrderController["Order & Checkout Transaction Controller"]
+        VendorController["Vendor Onboarding & Inventory Controller"]
+        AdminController["Admin Management & Governance Controller"]
+        DeliveryController["Hyperlocal Courier & OTP Controller"]
+        PaymentController["Razorpay & Webhook Controller"]
+        
+        SocketServer["Socket.IO Server\n(Order Tracking & Delivery Rooms)"]
+        StorageEngine["Storage Driver\n(Sharp Image Processing / Local / S3)"]
+        InvoiceEngine["PDFKit Invoice Engine\n(Automated GST Tax Invoices)"]
+    end
+
+    subgraph Persistence["5. Persistence & External Cloud Infrastructure"]
+        MongoDB[("MongoDB Atlas Replica Set\n27 Collections & ACID Transactions")]
+        RedisCache[("Redis Cache / In-Memory Fallback\n(Session & Query Caching)")]
+        RazorpayGateway["Razorpay Cloud Gateway\n(UPI, Net Banking, Cards & Webhooks)"]
+        AtlasSearch["Atlas Text Index\n(Fuzzy Catalog Search)"]
+    end
+
+    Clients --> Router
+    Router --> Context
+    Context --> AxiosClient
+    Context --> SocketClient
+
+    AxiosClient <-->|HTTPS REST API / JSON| CORS
+    SocketClient <-->|WSS WebSockets / Real-Time| SocketServer
+
+    CORS --> Helmet
+    Helmet --> RateLimit
+    RateLimit --> CSRF
+    CSRF --> AuthMiddleware
+    AuthMiddleware --> ZodMiddleware
+    ZodMiddleware --> CoreBackend
+
+    CoreBackend <-->|Mongoose ODM / TLS| MongoDB
+    CoreBackend <-->|Key-Value Store| RedisCache
+    CoreBackend <-->|API Calls & Webhooks| RazorpayGateway
+    CatalogController <--> AtlasSearch
+    CoreBackend --> StorageEngine
+    CoreBackend --> InvoiceEngine

@@ -8,7 +8,7 @@ const esc = (s) =>
     /[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
   );
-const site = () => env.CLIENT_ORIGIN.replace(/\/$/, '');
+const site = () => env.CLIENT_ORIGIN.split(',')[0].trim().replace(/\/+$/, '');
 export const PUBLIC_PAGES = [
   '/',
   '/about',

@@ -1,0 +1,31 @@
+flowchart TD
+    %% Vendor Lifecycle & Order Fulfillment Workflow
+    Start([Vendor Registers on VP Mart]) --> Form[Submit Business Name, GSTIN & Bank Info]
+    Form --> PendingReview[KYC Status: 'pending_verification']
+    
+    PendingReview --> AdminReview{Admin Verifies GSTIN & Docs?}
+    AdminReview -- Rejected --> FixDocs[Notify Vendor of Deficiencies]
+    FixDocs --> Form
+    AdminReview -- Approved --> ActiveStore[KYC Status: 'approved']
+
+    subgraph CatalogManagement["Catalog & Inventory Management"]
+        ActiveStore --> CreateListing[Create Product Listing]
+        CreateListing --> UploadImages[Upload Images via Sharp Image Processor]
+        UploadImages --> SetPricing[Define Price in Paise & Stock Level]
+        SetPricing --> Publish[Publish Listing to Live Storefront]
+    end
+
+    subgraph OrderFulfillment["Order Processing & Logistics"]
+        Publish --> IncomingOrder([Socket.IO Notification: New Order Placed])
+        IncomingOrder --> PackItem[Vendor Packages Item & Generates Shipping Slip]
+        PackItem --> MarkReady[Update Status: 'ready_for_pickup']
+        MarkReady --> CourierAssigned([Nearby Delivery Agent Accepts Pickup])
+        CourierAssigned --> CourierHandover[Handover Package to Verified Agent]
+    end
+
+    subgraph FinancialSettlement["Automated Ledger Settlement"]
+        CourierHandover --> HandoverDone([Agent Completes Delivery via Customer OTP])
+        HandoverDone --> CommissionCalc[Platform Calculates Commission Rate]
+        CommissionCalc --> LedgerCredit[(Credit Net Earnings to Vendor Ledger)]
+        LedgerCredit --> PayoutCycle[Disburse Payout in Weekly Settlement Cycle]
+    end

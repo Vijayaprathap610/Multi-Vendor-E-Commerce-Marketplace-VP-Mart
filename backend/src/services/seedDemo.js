@@ -377,6 +377,20 @@ const esc = (s) =>
 
 // Draws a plain illustrative tile for each demo product (not a photograph).
 async function productImage(name, top, w = 900, h = 900) {
+  try {
+    const { PRODUCT_IMAGE_URLS } = await import('../scripts/updateProductImages.js');
+    const photoUrl = PRODUCT_IMAGE_URLS[name];
+    if (photoUrl) {
+      const resp = await fetch(photoUrl, { signal: AbortSignal.timeout(6000) });
+      if (resp.ok) {
+        const ab = await resp.arrayBuffer();
+        return Buffer.from(ab);
+      }
+    }
+  } catch {
+    // Offline or network error: gracefully fall back to local SVG graphic
+  }
+
   const [ink, bg] = PALETTE[top] ?? ['#14171c', '#eceff3'];
   const initials = name
     .split(/\s+/)

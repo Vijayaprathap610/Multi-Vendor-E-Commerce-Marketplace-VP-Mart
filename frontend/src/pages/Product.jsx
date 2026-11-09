@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, Form } from 'react-bootstrap';
-import { FiMapPin, FiTruck } from 'react-icons/fi';
+import { Alert, Button, Form, Modal } from 'react-bootstrap';
+import { FiMapPin, FiTruck, FiStar } from 'react-icons/fi';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Price from '../components/Price.jsx';
 import ProductRail from '../components/ProductRail.jsx';
@@ -13,6 +13,7 @@ import { useAsync } from '../hooks/useAsync.js';
 import { useSeo } from '../hooks/useSeo.js';
 import { normalizeError } from '../services/api.js';
 import { catalogService } from '../services/catalogService.js';
+import { reviewService } from '../services/marketplaceService.js';
 import { formatDate, formatDateTime } from '../utils/format.js';
 import { formatPaise } from '../utils/money.js';
 
@@ -59,19 +60,64 @@ function Delivery({ delivery, pincode, openPicker }) {
 }
 
 function Reviews({ id, summary }) {
+  const { user } = useAuth();
   const [page, setPage] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [formErr, setFormErr] = useState(null);
+  const [formSuccess, setFormSuccess] = useState(false);
+
   const reviews = useAsync(() => catalogService.reviews(id, page), [id, page]);
   const d = reviews.data;
   const total = d ? Object.values(d.distribution).reduce((a, b) => a + b, 0) : 0;
+
+  async function submitReview(e) {
+    e.preventDefault();
+    setSubmitting(true);
+    setFormErr(null);
+    try {
+      await reviewService.create({
+        listingId: id,
+        rating: Number(rating),
+        title: title.trim(),
+        body: body.trim(),
+      });
+      setFormSuccess(true);
+      setShowModal(false);
+      reviews.reload();
+    } catch (err) {
+      setFormErr(normalizeError(err));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <section aria-labelledby="reviews-h" className="vp-section">
-      <h2 id="reviews-h" className="h5">
-        Ratings & reviews
-      </h2>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h2 id="reviews-h" className="h5 mb-0">
+          Ratings &amp; reviews
+        </h2>
+        {user?.role === 'buyer' && (
+          <Button variant="outline-dark" size="sm" onClick={() => { setShowModal(true); setFormErr(null); setFormSuccess(false); }}>
+            <FiStar className="me-1" /> Write a review
+          </Button>
+        )}
+      </div>
+
+      {formSuccess && (
+        <Alert variant="success" dismissible onClose={() => setFormSuccess(false)}>
+          Thank you! Your review has been submitted.
+        </Alert>
+      )}
+
       {reviews.error && <ErrorState error={reviews.error} onRetry={reviews.reload} />}
       {d && total === 0 && (
         <p className="text-secondary">
-          No reviews yet. Buyers can review a product after it has been delivered to them.
+          No reviews yet. Buyers can review a product after purchasing it.
         </p>
       )}
       {d && total > 0 && (
@@ -129,6 +175,56 @@ function Reviews({ id, summary }) {
           </ul>
         </div>
       )}
+
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title as="h2" className="h5">Write a Review</Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={submitReview}>
+          <Modal.Body>
+            {formErr && <Alert variant="danger" className="py-2 small">{formErr.message}</Alert>}
+            <Form.Group className="mb-3">
+              <Form.Label>Rating</Form.Label>
+              <Form.Select value={rating} onChange={(e) => setRating(e.target.value)}>
+                <option value={5}>5 stars — Excellent</option>
+                <option value={4}>4 stars — Good</option>
+                <option value={3}>3 stars — Average</option>
+                <option value={2}>2 stars — Poor</option>
+                <option value={1}>1 star — Terrible</option>
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Headline</Form.Label>
+              <Form.Control
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="What's most important to know?"
+                maxLength={100}
+              />
+            </Form.Group>
+            <Form.Group>
+              <Form.Label>Review</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="What did you like or dislike?"
+                maxLength={1000}
+              />
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="outline-secondary" onClick={() => setShowModal(false)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="dark" disabled={submitting}>
+              {submitting ? 'Submitting…' : 'Submit Review'}
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
     </section>
   );
 }
@@ -221,7 +317,7 @@ export default function Product() {
   async function addToCart() {
     setMsg(null);
     if (!user) return navigate('/login', { state: { from: location.pathname } });
-    if (user.role !== 'buyer')
+    if (user.role !== 'buyer' && user.role !== 'admin')
       return setMsg({
         v: 'warning',
         t: 'Only buyer accounts can purchase. Sign in with a buyer account to shop.',
@@ -331,6 +427,27 @@ export default function Product() {
             >
               {l.inStock ? (busy ? 'Adding…' : 'Add to cart') : 'Out of stock'}
             </Button>
+            {l.inStock && (
+              <Button
+                variant="warning"
+                size="lg"
+                onClick={() => {
+                  if (!user) {
+                    navigate('/login', { state: { from: `/checkout?buy=${l.id}&qty=${qty}` } });
+                  } else if (user.role !== 'buyer' && user.role !== 'admin') {
+                    setMsg({
+                      v: 'warning',
+                      t: 'Only buyer accounts can purchase. Sign in with a buyer account to shop.',
+                    });
+                  } else {
+                    navigate(`/checkout?buy=${l.id}&qty=${qty}`);
+                  }
+                }}
+                className="flex-grow-1 font-weight-bold"
+              >
+                Buy Now
+              </Button>
+            )}
           </div>
           <div aria-live="polite">
             {msg && (

@@ -1,6 +1,13 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_API_URL || '/api';
+function resolveBaseUrl() {
+  const envUrl = import.meta.env.VITE_API_URL?.trim();
+  if (!envUrl) return '/api';
+  const clean = envUrl.replace(/\/+$/, '');
+  return clean.endsWith('/api') ? clean : `${clean}/api`;
+}
+
+const baseURL = resolveBaseUrl();
 const SAFE = new Set(['get', 'head', 'options']);
 // A tiny non-secret hint that this browser has signed in. It only decides whether a silent
 // refresh is worth attempting; the real session lives in HttpOnly cookies the page cannot read.

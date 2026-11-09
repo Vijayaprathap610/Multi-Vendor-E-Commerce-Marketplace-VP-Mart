@@ -12,6 +12,11 @@ import * as contact from '../controllers/contactController.js';
 import * as commerce from '../controllers/commerceController.js';
 import * as adminCom from '../controllers/adminCommerceController.js';
 import * as vendorOrders from '../controllers/vendorOrdersController.js';
+import * as delivery from '../controllers/deliveryController.js';
+import * as invoice from '../controllers/invoiceController.js';
+import * as reviews from '../controllers/reviewController.js';
+import * as adminReports from '../controllers/adminReportsController.js';
+import * as adminDelivery from '../controllers/adminDeliveryController.js';
 import * as ccv from '../validators/commerce.js';
 import { authenticate, authorize, requireActive } from '../middlewares/auth.js';
 import { validate } from '../middlewares/validate.js';
@@ -120,7 +125,7 @@ export function buildRouter({ authLimit, strictLimit }) {
   );
 
   // --- Buyer: cart and orders ---
-  const buyer = [authenticate, authorize('buyer')];
+  const buyer = [authenticate, authorize('buyer', 'admin')];
   r.get('/cart', ...buyer, cart.get);
   r.post('/cart/items', ...buyer, validate({ body: cv.cartAddBody }), cart.add);
   r.patch(
@@ -212,6 +217,12 @@ export function buildRouter({ authLimit, strictLimit }) {
     ...vendorActive,
     validate({ params: cv.idParams }),
     vendorOrders.getVendorOrder,
+  );
+  r.patch(
+    '/vendor/orders/:id/status',
+    ...vendorActive,
+    validate({ params: cv.idParams, body: vv.shipmentStatusBody }),
+    vendorOrders.updateShipmentStatus,
   );
   r.get(
     '/vendor/listings',
@@ -378,6 +389,60 @@ export function buildRouter({ authLimit, strictLimit }) {
     ...adminOnly,
     validate({ params: cv.idParams }),
     adminCat.resolveMessage,
+  );
+
+  // --- Invoices ---
+  r.get('/orders/:id/invoice', authenticate, invoice.downloadInvoice);
+
+  // --- Reviews ---
+  r.post('/reviews', authenticate, authorize('buyer', 'admin'), reviews.createReview);
+  r.get('/reviews/mine', authenticate, authorize('buyer', 'admin'), reviews.getMyReviews);
+
+  // --- Vendor Delivery & Settlements ---
+  r.post(
+    '/vendor/shipments/:id/request-pickup',
+    ...vendorActive,
+    validate({ params: cv.idParams }),
+    delivery.vendorRequestPickup,
+  );
+  r.get('/vendor/settlements', ...vendorActive, adminReports.listSettlements);
+
+  // --- Delivery Agent ---
+  // Read-only self-service routes: available to any authenticated delivery_agent (including pending_approval)
+  const agentAuth = [authenticate, authorize('delivery_agent')];
+  // Action routes: only active agents can accept pickups, mark deliveries etc.
+  const agentOnly = [...agentAuth, requireActive];
+  r.get('/delivery/profile', ...agentAuth, delivery.getProfile);
+  r.patch('/delivery/profile', ...agentAuth, delivery.updateProfile);
+  r.get('/delivery/available', ...agentOnly, delivery.listAvailable);
+  r.post('/delivery/shipments/:id/accept', ...agentOnly, validate({ params: cv.idParams }), delivery.acceptPickup);
+  r.post('/delivery/shipments/:id/pickup', ...agentOnly, validate({ params: cv.idParams }), delivery.pickupPackage);
+  r.post('/delivery/shipments/:id/verify-otp', ...agentOnly, validate({ params: cv.idParams }), delivery.verifyOtp);
+  r.post('/delivery/shipments/:id/failed', ...agentOnly, validate({ params: cv.idParams }), delivery.reportFailed);
+  r.post('/delivery/shipments/:id/return', ...agentOnly, validate({ params: cv.idParams }), delivery.returnToVendor);
+  r.get('/delivery/my-deliveries', ...agentAuth, delivery.myDeliveries);
+  r.get('/delivery/earnings', ...agentAuth, delivery.myEarnings);
+
+  // --- Admin Delivery Agent Management ---
+  r.get('/admin/delivery-agents/available', ...adminOnly, adminDelivery.listAvailableAgents);
+  r.get('/admin/delivery-agents', ...adminOnly, adminDelivery.listAgents);
+  r.get('/admin/delivery-agents/:id', ...adminOnly, validate({ params: cv.idParams }), adminDelivery.getAgent);
+  r.post('/admin/delivery-agents', ...adminOnly, adminDelivery.createAgent);
+  r.patch('/admin/delivery-agents/:id', ...adminOnly, validate({ params: cv.idParams }), adminDelivery.updateAgent);
+  r.delete('/admin/delivery-agents/:id', ...adminOnly, validate({ params: cv.idParams }), adminDelivery.deleteAgent);
+  r.get('/admin/deliveries', ...adminOnly, adminDelivery.listDeliveries);
+  r.post('/admin/deliveries/:id/assign', ...adminOnly, validate({ params: cv.idParams }), adminDelivery.assignDelivery);
+  r.patch('/admin/deliveries/:id/status', ...adminOnly, validate({ params: cv.idParams }), adminDelivery.updateDeliveryStatus);
+
+  // --- Admin Reports, Settlements & Vendor Deletion Safeguards ---
+  r.get('/admin/reports/revenue', ...adminOnly, adminReports.getRevenueReports);
+  r.get('/admin/settlements', ...adminOnly, adminReports.listSettlements);
+  r.post('/admin/settlements', ...adminOnly, adminReports.createSettlement);
+  r.delete(
+    '/admin/vendors/:id',
+    ...adminOnly,
+    validate({ params: cv.idParams }),
+    adminReports.deleteVendorWithSafeguards,
   );
 
   return r;

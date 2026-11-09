@@ -13,7 +13,7 @@ const EMPTY = {
 // The server is the only source of prices and totals; this context just mirrors its answer.
 export function CartProvider({ children }) {
   const { user } = useAuth();
-  const isBuyer = user?.role === 'buyer';
+  const isBuyer = user?.role === 'buyer' || user?.role === 'admin';
   const [cart, setCart] = useState(EMPTY);
   const [loading, setLoading] = useState(false);
 

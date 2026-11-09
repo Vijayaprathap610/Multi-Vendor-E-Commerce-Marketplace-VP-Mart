@@ -40,4 +40,21 @@ Object.assign(adminService, {
   retryRefund: (id) => api.post(`/admin/refunds/${id}/retry`).then(d),
   settings: () => api.get('/admin/settings').then(d),
   saveSettings: (p) => api.put('/admin/settings', p).then(d),
+  revenueReports: () => api.get('/admin/reports/revenue').then(d),
+  settlements: (params) => api.get('/admin/settlements', { params }).then(d),
+  createSettlement: (p) => api.post('/admin/settlements', p).then(d),
+  deleteVendor: (id, reason) => api.delete(`/admin/vendors/${id}`, { data: { reason } }).then(d),
+});
+
+// --- Delivery Agent Management ---
+Object.assign(adminService, {
+  deliveryAgents: (params) => api.get('/admin/delivery-agents', { params }).then(d),
+  deliveryAgent: (id) => api.get(`/admin/delivery-agents/${id}`).then(d),
+  availableAgents: () => api.get('/admin/delivery-agents/available').then(d),
+  createDeliveryAgent: (payload) => api.post('/admin/delivery-agents', payload).then(d),
+  updateDeliveryAgent: (id, payload) => api.patch(`/admin/delivery-agents/${id}`, payload).then(d),
+  deleteDeliveryAgent: (id) => api.delete(`/admin/delivery-agents/${id}`).then(d),
+  deliveries: (params) => api.get('/admin/deliveries', { params }).then(d),
+  assignDelivery: (shipmentId, payload) => api.post(`/admin/deliveries/${shipmentId}/assign`, payload).then(d),
+  updateDeliveryStatus: (shipmentId, payload) => api.patch(`/admin/deliveries/${shipmentId}/status`, payload).then(d),
 });

@@ -4,6 +4,7 @@ import { FiMapPin, FiMenu, FiShoppingCart, FiUser } from 'react-icons/fi';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import Logo from './Logo.jsx';
 import SearchBox from './SearchBox.jsx';
+import NotificationBell from './NotificationBell.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { useLocationPin } from '../context/LocationContext.jsx';
@@ -60,6 +61,18 @@ function AllCategories({ cats }) {
           {cats.map((c) => (
             <div key={c.id} className="vp-allcats-col">
               <Link to={`/c/${c.slug}`} className="vp-allcats-top" onClick={() => setOpen(false)}>
+                {c.imageUrl && (
+                  <img
+                    src={c.imageUrl}
+                    alt=""
+                    width="20"
+                    height="20"
+                    style={{ borderRadius: '4px', objectFit: 'cover', marginRight: '6px' }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )}
                 {c.name}
               </Link>
               <ul>
@@ -87,6 +100,7 @@ function AccountMenu() {
   const dashboards = {
     vendor: ['/vendor', 'Vendor dashboard'],
     admin: ['/admin', 'Admin dashboard'],
+    delivery_agent: ['/agent', 'Delivery agent dashboard'],
   };
   return (
     <Dropdown align="end" className="vp-acct">
@@ -176,6 +190,7 @@ export default function Header() {
           <small>Region</small>
           <strong>IN · ₹ INR</strong>
         </span>
+        <NotificationBell />
         <AccountMenu />
         {showBuyerLinks && (
           <Link to="/orders" className="vp-hbtn vp-orders">

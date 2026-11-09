@@ -143,7 +143,8 @@ export async function forgotPassword(req, res) {
       { _id: user._id },
       { resetTokenHash: sha256(token), resetTokenExpires: new Date(Date.now() + 30 * 60 * 1000) },
     );
-    const link = `${env.CLIENT_ORIGIN}/reset-password?token=${token}`;
+    const clientOrigin = env.CLIENT_ORIGIN.split(',')[0].trim().replace(/\/+$/, '');
+    const link = `${clientOrigin}/reset-password?token=${token}`;
     const mail = passwordResetEmail(user.name, link);
     try {
       await sendMail({ to: user.email, ...mail });

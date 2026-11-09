@@ -1,10 +1,12 @@
 import env from './config/env.js';
+import http from 'node:http';
 import { connectDb, disconnectDb } from './config/db.js';
 import { createApp } from './app.js';
 import { logger } from './utils/logger.js';
 import { allModels } from './models/index.js';
 import { closeRedis } from './services/cache.js';
 import { startJobs } from './jobs/index.js';
+import { initSocketServer } from './sockets/socket.js';
 
 async function main() {
   await connectDb();
@@ -13,7 +15,10 @@ async function main() {
 
   const app = createApp();
   const stopJobs = startJobs();
-  const server = app.listen(env.PORT, () => logger.info(`API listening on :${env.PORT}`));
+  const httpServer = http.createServer(app);
+  initSocketServer(httpServer);
+
+  const server = httpServer.listen(env.PORT, () => logger.info(`API listening on :${env.PORT}`));
 
   const shutdown = async (signal) => {
     logger.info({ signal }, 'shutting down');

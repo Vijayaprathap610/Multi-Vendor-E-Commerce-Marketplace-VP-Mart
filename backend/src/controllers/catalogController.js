@@ -263,7 +263,6 @@ export async function home(_req, res) {
         { $match: base },
         { $group: { _id: { $arrayElemAt: ['$categoryPath', 0] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-        { $limit: 8 },
       ]),
       Listing.aggregate([
         { $match: { ...base, brandId: { $ne: null } } },
@@ -302,20 +301,24 @@ export async function home(_req, res) {
       ]).then((a) => a.map(toPublicListing)),
       take({ ...inStock, ratingCount: { $gt: 0 } }, { ratingAvg: -1, ratingCount: -1 }),
     ]);
-    const cats = await Category.find({
-      _id: { $in: featured.map((f) => f._id) },
+    const allTopCats = await Category.find({
+      parent: null,
       isActive: true,
-    }).lean();
-    const catById = new Map(cats.map((c) => [String(c._id), c]));
+    })
+      .sort({ sortOrder: 1, name: 1 })
+      .lean();
+    const countById = new Map(featured.map((f) => [String(f._id), f.count]));
+    const featuredCategories = allTopCats.map((c) => ({
+      ...publicCategory(c),
+      listingCount: countById.get(String(c._id)) || 0,
+    }));
     const brands = await Brand.find({
       _id: { $in: brandAgg.map((b) => b._id) },
       isActive: true,
     }).lean();
     const brandById = new Map(brands.map((b) => [String(b._id), b]));
     return {
-      featuredCategories: featured
-        .filter((f) => catById.has(String(f._id)))
-        .map((f) => ({ ...publicCategory(catById.get(String(f._id))), listingCount: f.count })),
+      featuredCategories,
       popularBrands: brandAgg
         .filter((b) => brandById.has(String(b._id)))
         .map((b) => ({

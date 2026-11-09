@@ -92,7 +92,18 @@ async function planShipments(priced, pincode) {
 
 export async function preview(user, { addressId, couponCode, buyNow }) {
   const src = await resolveItems(user, { buyNow, couponCode });
-  if (!src.items.length) throw new AppError(409, 'CART_EMPTY', 'Your cart is empty');
+  if (!src.items.length) {
+    return {
+      lines: [],
+      shipments: [],
+      totals: { subtotalPaise: 0, discountPaise: 0, shippingPaise: 0, taxPaise: 0, totalPaise: 0 },
+      hasIssues: false,
+      coupon: null,
+      delivery: null,
+      empty: true,
+      onlinePaymentAvailable: onlineEnabled(),
+    };
+  }
   const { _couponDoc, ...priced } = await priceItems(src.items, {
     couponCode: src.couponCode,
     buyerId: user._id,
@@ -323,6 +334,7 @@ export async function createOrder(user, { addressId, paymentMethod, couponCode, 
           currency: 'INR',
           name: 'VP Mart',
           description: `Order ${order.orderNumber}`,
+          isDummy: !!provider.isDummy,
         },
       },
     };
@@ -566,7 +578,12 @@ export async function getOrderView(orderId, buyerId) {
       ['pending_payment', 'confirmed'].includes(order.status) &&
       shipments.every((s) => CANCELLABLE_SHIPMENT.includes(s.status)),
     payment: payment
-      ? { method: payment.method, status: payment.status, refundedPaise: payment.refundedPaise }
+      ? {
+          method: payment.method,
+          status: payment.status,
+          providerPaymentId: payment.providerPaymentId,
+          refundedPaise: payment.refundedPaise,
+        }
       : null,
     refunds: refunds.map((r) => ({
       id: String(r._id),

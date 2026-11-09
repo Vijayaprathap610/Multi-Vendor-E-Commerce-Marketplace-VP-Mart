@@ -8,16 +8,19 @@ import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { CartProvider } from './context/CartContext.jsx';
 import { LocationProvider } from './context/LocationContext.jsx';
+import { SocketProvider } from './context/SocketContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <LocationProvider>
-          <CartProvider>
-            <App />
-          </CartProvider>
-        </LocationProvider>
+        <SocketProvider>
+          <LocationProvider>
+            <CartProvider>
+              <App />
+            </CartProvider>
+          </LocationProvider>
+        </SocketProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

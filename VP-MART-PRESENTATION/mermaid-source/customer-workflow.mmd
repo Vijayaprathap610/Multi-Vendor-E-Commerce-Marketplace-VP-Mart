@@ -1,0 +1,51 @@
+sequenceDiagram
+    autonumber
+    actor Customer as Customer
+    participant Frontend as React 19 Frontend
+    participant Gateway as Express API / Middleware
+    participant Database as MongoDB Atlas
+    participant Payment as Razorpay Gateway
+    participant Realtime as Socket.IO Hub
+
+    Note over Customer, Realtime: 1. Registration & Authentication
+    Customer->>Frontend: Register / Login with Email & Password
+    Frontend->>Gateway: POST /api/auth/login
+    Gateway->>Database: Verify Bcrypt Hash
+    Database-->>Gateway: User Verified
+    Gateway-->>Frontend: 200 OK + Set HttpOnly Cookies (vp_access, vp_refresh, vp_csrf)
+    Frontend-->>Customer: Authenticated Session Active
+
+    Note over Customer, Realtime: 2. Catalog Search & Cart Management
+    Customer->>Frontend: Search Products / Filter by Category
+    Frontend->>Gateway: GET /api/catalog/search?q=...&category=...
+    Gateway->>Database: Query Listings & Inventory
+    Database-->>Gateway: Matched Active Products
+    Gateway-->>Frontend: Product Catalog Data
+    Frontend-->>Customer: Display Products with Live Pricing
+    Customer->>Frontend: Click "Add to Cart"
+    Frontend->>Gateway: POST /api/cart/items (listingId, quantity)
+    Gateway->>Database: Validate Stock & Upsert Cart
+    Database-->>Gateway: Cart Updated
+    Gateway-->>Frontend: 200 OK with Subtotal in Paise
+
+    Note over Customer, Realtime: 3. Checkout, Payment & Order Confirmation
+    Customer->>Frontend: Proceed to Checkout & Select Address
+    Frontend->>Gateway: POST /api/orders/checkout (addressId, method: "razorpay")
+    Gateway->>Database: Start Transaction & Reserve Stock
+    alt Stock Available
+        Gateway->>Payment: Create Razorpay Order
+        Payment-->>Gateway: rzp_order_id
+        Gateway-->>Frontend: Order Pending + Payment Details
+        Frontend->>Customer: Open Razorpay Payment Modal
+        Customer->>Payment: Authorize UPI / Card / NetBanking
+        Payment-->>Frontend: Payment Success Response (Signature)
+        Frontend->>Gateway: POST /api/payments/verify (Signature Verification)
+        Gateway->>Database: Confirm Order & Commit Stock Decrement
+        Gateway->>Realtime: Broadcast 'order:created' to Vendor & Courier Rooms
+        Gateway-->>Frontend: 200 OK (Order Confirmed)
+        Frontend-->>Customer: Display Order Confirmation & Live Tracking
+    else Stock Insufficient
+        Gateway->>Database: Abort Transaction & Rollback
+        Gateway-->>Frontend: 422 Conflict (Stock Shortage)
+        Frontend-->>Customer: Display Out of Stock Alert
+    end

@@ -19,10 +19,12 @@ import Refund from './Refund.js';
 import Review from './Review.js';
 import Session from './Session.js';
 import Setting from './Setting.js';
+import Settlement from './Settlement.js';
 import Shipment from './Shipment.js';
 import User from './User.js';
 import VendorProfile from './VendorProfile.js';
 import WebhookEvent from './WebhookEvent.js';
+import DeliveryAgentProfile from './DeliveryAgentProfile.js';
 
 // Generated list of every model: keep in sync by adding a file in this folder and rerunning the
 // one-liner in README (or just add it here).
@@ -36,6 +38,7 @@ export const allModels = [
   ContactMessage,
   Coupon,
   CouponRedemption,
+  DeliveryAgentProfile,
   LedgerEntry,
   Listing,
   MediaAsset,
@@ -48,6 +51,7 @@ export const allModels = [
   Review,
   Session,
   Setting,
+  Settlement,
   Shipment,
   User,
   VendorProfile,
@@ -63,6 +67,7 @@ export {
   ContactMessage,
   Coupon,
   CouponRedemption,
+  DeliveryAgentProfile,
   LedgerEntry,
   Listing,
   MediaAsset,
@@ -75,6 +80,7 @@ export {
   Review,
   Session,
   Setting,
+  Settlement,
   Shipment,
   User,
   VendorProfile,

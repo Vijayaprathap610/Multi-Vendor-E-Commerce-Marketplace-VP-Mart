@@ -345,7 +345,21 @@ export default function Browse({ collection, shop = false }) {
         <ul className="vp-subcats" aria-label="Sub-categories">
           {catInfo.data.children.map((c) => (
             <li key={c.id}>
-              <Link to={`/c/${c.slug}`}>{c.name}</Link>
+              <Link to={`/c/${c.slug}`}>
+                {c.imageUrl && (
+                  <img
+                    src={c.imageUrl}
+                    alt=""
+                    width="22"
+                    height="22"
+                    className="vp-subcat-pill-img"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )}
+                {c.name}
+              </Link>
             </li>
           ))}
         </ul>

@@ -13,8 +13,11 @@ export const orderService = {
   checkout: (p) => api.post('/checkout', p).then(d),
   list: (page = 1) => api.get('/orders', { params: { page, limit: 10 } }).then(d),
   get: (id) => api.get(`/orders/${id}`).then((r) => r.data.order),
+  getOrder: (id) => api.get(`/orders/${id}`).then((r) => r.data.order),
   cancel: (id, reason) =>
     api.post(`/orders/${id}/cancel`, reason ? { reason } : {}).then((r) => r.data.order),
+  cancelShipment: (orderId, shipmentId, reason) =>
+    api.post(`/orders/${orderId}/cancel`, { shipmentId, reason }).then((r) => r.data),
   verifyPayment: (p) => api.post('/payments/verify', p).then(d),
   paymentFailed: (orderId, reason) => api.post('/payments/failed', { orderId, reason }).then(d),
 };
@@ -28,4 +31,6 @@ export const notificationService = {
 
 export const vendorOrderService = {
   list: (page = 1) => api.get('/vendor/orders', { params: { page } }).then(d),
+  get: (id) => api.get(`/vendor/orders/${id}`).then(d),
+  updateShipmentStatus: (id, status) => api.patch(`/vendor/orders/${id}/status`, { status }).then(d),
 };

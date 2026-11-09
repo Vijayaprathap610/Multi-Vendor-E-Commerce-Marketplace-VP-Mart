@@ -95,8 +95,8 @@ function BannerModal({ banner, onClose, onSaved }) {
     }
   }
   return (
-    <Modal show onHide={onClose} size="lg" scrollable>
-      <Form onSubmit={save} noValidate>
+    <Modal show onHide={onClose} size="lg" scrollable centered className="vp-modal-scrollable">
+      <Form onSubmit={save} noValidate className="vp-modal-form">
         <Modal.Header closeButton>
           <Modal.Title as="h2" className="h5">
             {edit ? 'Edit banner' : 'New banner or advertisement'}
@@ -104,7 +104,7 @@ function BannerModal({ banner, onClose, onSaved }) {
         </Modal.Header>
         <Modal.Body>
           {err && (
-            <Alert variant="danger" role="alert">
+            <Alert variant="danger" role="alert" className="mb-3">
               {err}
             </Alert>
           )}
@@ -115,16 +115,16 @@ function BannerModal({ banner, onClose, onSaved }) {
             onChange={set('description')}
             error={errors.description}
           />
-          <div className="d-flex gap-2">
-            <div className="flex-fill">
+          <div className="row g-3 mb-3">
+            <div className="col-12 col-md-6">
               <FormField
                 label="Button text (optional)"
                 value={f.ctaLabel}
                 onChange={set('ctaLabel')}
               />
             </div>
-            <div className="flex-fill">
-              <Form.Group className="mb-3" controlId="bk">
+            <div className="col-12 col-md-6">
+              <Form.Group controlId="bk">
                 <Form.Label>Type</Form.Label>
                 <Form.Select value={f.kind} onChange={set('kind')}>
                   <option value="banner">Banner</option>
@@ -142,8 +142,8 @@ function BannerModal({ banner, onClose, onSaved }) {
             error={errors.destination}
             hint="Where the banner links to, e.g. /c/fashion or https://…"
           />
-          <div className="d-flex gap-2">
-            <div className="flex-fill">
+          <div className="row g-3 mb-3">
+            <div className="col-12 col-md-5">
               <FormField
                 label="Starts"
                 type="datetime-local"
@@ -152,7 +152,7 @@ function BannerModal({ banner, onClose, onSaved }) {
                 error={errors.startAt}
               />
             </div>
-            <div className="flex-fill">
+            <div className="col-12 col-md-5">
               <FormField
                 label="Ends"
                 type="datetime-local"
@@ -161,7 +161,7 @@ function BannerModal({ banner, onClose, onSaved }) {
                 error={errors.endAt}
               />
             </div>
-            <div style={{ width: 110 }}>
+            <div className="col-12 col-md-2">
               <FormField
                 label="Order"
                 inputMode="numeric"
@@ -177,13 +177,15 @@ function BannerModal({ banner, onClose, onSaved }) {
             checked={f.isActive}
             onChange={set('isActive')}
           />
-          <ImageUploader
-            purpose="banner"
-            label="Banner image (wide, about 1600×520)"
-            items={image}
-            onChange={setImage}
-            max={1}
-          />
+          <div className="vp-banner-uploader">
+            <ImageUploader
+              purpose="banner"
+              label="Banner image (wide, about 1600×520)"
+              items={image}
+              onChange={setImage}
+              max={1}
+            />
+          </div>
           {errors.image && (
             <div className="text-danger small mt-1" role="alert">
               {errors.image}
@@ -191,7 +193,7 @@ function BannerModal({ banner, onClose, onSaved }) {
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="outline-secondary" onClick={onClose}>
+          <Button variant="outline-secondary" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
           <Button type="submit" variant="dark" disabled={busy}>

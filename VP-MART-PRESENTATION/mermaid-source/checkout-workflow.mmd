@@ -1,0 +1,31 @@
+flowchart TD
+    %% Shopping Cart and Checkout Workflow
+    Start([User Initiates Checkout from Cart]) --> CheckAuth{Is User Authenticated?}
+    CheckAuth -- No --> RedirectLogin[Redirect to /login with State: from=/checkout]
+    RedirectLogin --> AuthDone[User Signs In]
+    AuthDone --> Start
+    
+    CheckAuth -- Yes --> FetchCart[GET /api/cart - Load Items & Subtotals in Paise]
+    FetchCart --> AddressStep{Has Saved Delivery Address?}
+    
+    AddressStep -- No --> CreateAddress[POST /api/orders/addresses - Validate PIN & Phone]
+    CreateAddress --> AddressStep
+    
+    AddressStep -- Yes --> SelectAddress[Select Shipping Address]
+    SelectAddress --> QuotePricing[POST /api/cart/quote - Calculate Tax & Delivery Fee]
+    
+    QuotePricing --> CouponCheck{User Enters Coupon Code?}
+    CouponCheck -- Yes --> ValidateCoupon[POST /api/coupons/apply - Check Validity & Min Cart]
+    ValidateCoupon --> ApplyDiscount[Apply Percentage or Fixed Paise Discount]
+    CouponCheck -- No --> ReviewSummary[Review Final Payable Amount]
+    ApplyDiscount --> ReviewSummary
+    
+    ReviewSummary --> ChoosePayment{Select Payment Method}
+    ChoosePayment -- Cash On Delivery (COD) --> PlaceOrderCOD[POST /api/orders/checkout with method: 'cod']
+    PlaceOrderCOD --> AtomicTransactCOD[MongoDB Atomic Transaction: Reserve Stock]
+    AtomicTransactCOD --> OrderPlacedCOD[Order Marked as 'pending' / Ready for Dispatch]
+    
+    ChoosePayment -- Razorpay Online --> PlaceOrderRzp[POST /api/orders/checkout with method: 'razorpay']
+    PlaceOrderRzp --> CreateRzpOrder[Backend Generates Razorpay Order ID]
+    CreateRzpOrder --> LaunchRzp[Launch Razorpay Modal on Frontend]
+    LaunchRzp --> ProceedPayment[Proceed to Payment Gateway Workflow]

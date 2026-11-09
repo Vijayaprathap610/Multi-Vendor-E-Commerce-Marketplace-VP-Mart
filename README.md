@@ -2,7 +2,7 @@
 
 Multi-vendor marketplace (Buyer, Vendor, Delivery Agent, Admin). JavaScript only: React + Vite + React Bootstrap on the front, Express 5 + MongoDB (Mongoose) on the back.
 
-**Status: Phase 1 of 5 (foundation).** Accounts, authentication, role-based authorization and the admin approval API are built and tested. The catalogue, cart, payments, delivery and reports come in later phases. See `docs/TRACEABILITY.md` for the live, honest status of every requirement and `docs/VERSIONS.md` for installed versions and decisions.
+**Status: Phases 1-2 complete, Phase 3 in progress.** See `docs/STATUS.md` for the current snapshot. See `docs/TRACEABILITY.md` for the live, honest status of every requirement and `docs/VERSIONS.md` for installed versions and decisions.
 
 ## Prerequisites
 - Node.js >= 22.12

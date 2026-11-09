@@ -9,7 +9,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
+    "dev": "nodemon src/index.js",
     "seed:admin": "node src/scripts/seedAdmin.js",
     "test": "node --test --test-concurrency=1 --test-timeout=60000 \"tests/*.test.js\"",
     "lint": "eslint .",
@@ -37,16 +37,19 @@
     "mongoose": "^9.11.4",
     "multer": "^2.5.0",
     "nodemailer": "^10.2.1",
+    "pdfkit": "^0.20.2",
     "pino": "^10.4.0",
     "pino-http": "^11.0.0",
     "razorpay": "^2.9.8",
     "sharp": "^0.35.5",
+    "socket.io": "^4.8.4",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "eslint": "^10.13.0",
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
     "globals": "^17.13.0",
+    "nodemon": "^3.1.11",
     "prettier": "^3.9.10",
     "supertest": "^7.3.1"
   }

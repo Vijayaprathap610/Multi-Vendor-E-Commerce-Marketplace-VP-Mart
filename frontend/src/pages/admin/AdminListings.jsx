@@ -17,6 +17,17 @@ export default function AdminListings() {
   const [hide, setHide] = useState(null);
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
+  const [couponTarget, setCouponTarget] = useState(null);
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [couponMsg, setCouponMsg] = useState(null);
+  const [couponForm, setCouponForm] = useState({
+    discountType: 'percent',
+    value: 10,
+    validFrom: new Date().toISOString().slice(0, 10),
+    validTo: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+    codePrefix: 'PROMO',
+    title: '',
+  });
   const dq = useDebounce(q, 300);
   const list = useAsync(
     () =>
@@ -155,6 +166,19 @@ export default function AdminListings() {
                     )}
                   </td>
                   <td className="text-nowrap">
+                    {l.productId && (
+                      <Button
+                        size="sm"
+                        variant="outline-secondary"
+                        className="me-1"
+                        onClick={() => {
+                          setCouponTarget(l);
+                          setCouponMsg(null);
+                        }}
+                      >
+                        Coupon
+                      </Button>
+                    )}
                     {l.status === 'hidden' ? (
                       <Button size="sm" variant="dark" onClick={() => moderate(l, 'unhide')}>
                         Restore
@@ -172,8 +196,9 @@ export default function AdminListings() {
         </TableWrap>
       )}
       {d && <Pagination page={d.page} pages={d.pages} onChange={setPage} />}
-      <Modal show={!!hide} onHide={() => setHide(null)} centered>
+      <Modal show={!!hide} onHide={() => setHide(null)} centered scrollable className="vp-modal-scrollable">
         <Form
+          className="vp-modal-form"
           onSubmit={(e) => {
             e.preventDefault();
             if (reason.trim().length >= 3) moderate(hide, 'hide', reason.trim());
@@ -185,7 +210,7 @@ export default function AdminListings() {
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <p>
+            <p className="text-secondary mb-3">
               “{hide?.title}” will be removed from the public shop. The vendor is told it was hidden
               and cannot restore it. The record stays for orders and audit.
             </p>
@@ -205,6 +230,112 @@ export default function AdminListings() {
             </Button>
             <Button type="submit" variant="danger" disabled={reason.trim().length < 3}>
               Hide listing
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
+
+      <Modal show={!!couponTarget} onHide={() => setCouponTarget(null)} centered scrollable size="md" className="vp-modal-scrollable">
+        <Form
+          className="vp-modal-form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setCouponBusy(true);
+            setCouponMsg(null);
+            try {
+              await adminService.createProductCoupon(couponTarget.productId, {
+                title: couponForm.title || `Special on ${couponTarget.title}`,
+                discountType: couponForm.discountType,
+                value: Number(couponForm.value),
+                validFrom: new Date(couponForm.validFrom),
+                validTo: new Date(couponForm.validTo),
+                codePrefix: couponForm.codePrefix.toUpperCase(),
+                productIds: [couponTarget.productId],
+              });
+              setCouponMsg({ type: 'success', text: 'Product coupon created successfully!' });
+              setTimeout(() => setCouponTarget(null), 1200);
+            } catch (err) {
+              setCouponMsg({ type: 'danger', text: normalizeError(err).message });
+            } finally {
+              setCouponBusy(false);
+            }
+          }}
+        >
+          <Modal.Header closeButton>
+            <Modal.Title as="h2" className="h5">
+              Create Coupon for “{couponTarget?.title}”
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {couponMsg && (
+              <Alert variant={couponMsg.type} className="py-2 small mb-3">
+                {couponMsg.text}
+              </Alert>
+            )}
+            <Form.Group className="mb-3">
+              <Form.Label>Coupon Title</Form.Label>
+              <Form.Control
+                placeholder={`Promo for ${couponTarget?.title}`}
+                value={couponForm.title}
+                onChange={(e) => setCouponForm({ ...couponForm, title: e.target.value })}
+              />
+            </Form.Group>
+            <div className="row g-3 mb-3">
+              <div className="col-12 col-md-6">
+                <Form.Label>Discount Type</Form.Label>
+                <Form.Select
+                  value={couponForm.discountType}
+                  onChange={(e) => setCouponForm({ ...couponForm, discountType: e.target.value })}
+                >
+                  <option value="percent">Percent (%)</option>
+                  <option value="fixed">Fixed (₹)</option>
+                </Form.Select>
+              </div>
+              <div className="col-12 col-md-6">
+                <Form.Label>Discount Value</Form.Label>
+                <Form.Control
+                  type="number"
+                  min={1}
+                  max={couponForm.discountType === 'percent' ? 100 : 100000}
+                  value={couponForm.value}
+                  onChange={(e) => setCouponForm({ ...couponForm, value: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="row g-3 mb-3">
+              <div className="col-12 col-md-6">
+                <Form.Label>Valid From</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={couponForm.validFrom}
+                  onChange={(e) => setCouponForm({ ...couponForm, validFrom: e.target.value })}
+                />
+              </div>
+              <div className="col-12 col-md-6">
+                <Form.Label>Valid To</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={couponForm.validTo}
+                  onChange={(e) => setCouponForm({ ...couponForm, validTo: e.target.value })}
+                />
+              </div>
+            </div>
+            <Form.Group className="mb-2">
+              <Form.Label>Code Prefix</Form.Label>
+              <Form.Control
+                value={couponForm.codePrefix}
+                maxLength={10}
+                onChange={(e) => setCouponForm({ ...couponForm, codePrefix: e.target.value.toUpperCase() })}
+              />
+              <Form.Text className="text-secondary">E.g., PROMO → generates code like PROMO-ABC12</Form.Text>
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="outline-secondary" onClick={() => setCouponTarget(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="dark" disabled={couponBusy}>
+              {couponBusy ? 'Creating…' : 'Create Coupon'}
             </Button>
           </Modal.Footer>
         </Form>

@@ -1,0 +1,44 @@
+sequenceDiagram
+    autonumber
+    actor Buyer as Customer
+    participant UI as React Storefront / Modal
+    participant Backend as Express Payment Controller
+    participant Razorpay as Razorpay Cloud Gateway
+    participant Database as MongoDB Atlas
+    participant Invoice as PDFKit Invoice Service
+    participant Sockets as Socket.IO Server
+
+    Note over Buyer, Sockets: Phase 1: Order Generation & Payment Request
+    Buyer->>UI: Confirm Razorpay Payment Option
+    UI->>Backend: POST /api/orders/checkout (addressId, method: "razorpay")
+    Backend->>Razorpay: Create Order (amountPaise, currency: "INR", receipt: orderNum)
+    Razorpay-->>Backend: Return { id: "order_xyz", amount: 49900, status: "created" }
+    Backend->>Database: Save Order as 'pending_payment'
+    Backend-->>UI: Return Razorpay Order ID & Public Key
+    UI->>Buyer: Open Secure Razorpay Checkout Modal
+
+    Note over Buyer, Sockets: Phase 2: Gateway Authorization
+    Buyer->>Razorpay: Select UPI / Credit Card / NetBanking & Authorize
+    alt Payment Authorized
+        Razorpay-->>UI: Return { razorpay_order_id, razorpay_payment_id, razorpay_signature }
+        UI->>Backend: POST /api/payments/verify (Signature Verification Payload)
+        Backend->>Backend: Compute HMAC SHA256 (order_id + "|" + payment_id, secret)
+        alt Signature Matches
+            Backend->>Database: Start Transaction: Set Status = 'confirmed' & Decrement Stock
+            Database-->>Backend: Stock Committed Cleanly
+            Backend->>Invoice: Generate PDF Tax Invoice
+            Invoice-->>Database: Store Invoice Record
+            Backend->>Sockets: Emit 'order:created' to Vendor Room
+            Backend-->>UI: 200 OK (Payment Verified & Order Confirmed)
+            UI-->>Buyer: Show Order Success & Download Invoice Button
+        else Signature Mismatch (Tampering Attempt)
+            Backend->>Database: Flag Order as 'fraud_review'
+            Backend-->>UI: 400 Bad Request (Invalid Payment Signature)
+            UI-->>Buyer: Show Security Alert
+        end
+    else User Dismisses or Payment Fails
+        Razorpay-->>UI: Payment Cancelled / Failed
+        UI->>Backend: POST /api/payments/failed (orderId, errorDetails)
+        Backend->>Database: Mark Payment Record as 'failed'
+        UI-->>Buyer: Prompt Retry with Alternate Payment Method
+    end

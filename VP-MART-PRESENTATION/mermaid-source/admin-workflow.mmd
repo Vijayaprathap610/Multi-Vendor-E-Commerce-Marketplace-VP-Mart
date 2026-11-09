@@ -1,0 +1,34 @@
+flowchart TD
+    %% Administrator Governance & Operations Workflow
+    AdminLogin([Admin Logs In via Authenticated Portal]) --> MasterDash[Admin Central Dashboard]
+
+    subgraph UserAndVendor["1. User & Vendor Governance"]
+        MasterDash --> UsersList[User Management Table]
+        UsersList --> RoleChange[Promote / Demote User Role]
+        UsersList --> SuspendUser[Suspend / Reactivate User Account]
+        MasterDash --> VendorQueue[Vendor Onboarding Review Queue]
+        VendorQueue --> VerifyKYC[Inspect Bank Details & Verify GSTIN]
+        VendorQueue --> IssueWarning[Issue Official Compliance Warning]
+    end
+
+    subgraph CatalogControl["2. Marketplace Catalog Control"]
+        MasterDash --> Categories[Manage Category Taxonomy Tree]
+        MasterDash --> Brands[Register & Verify Official Brands]
+        MasterDash --> Banners[Upload & Schedule Homepage Hero Banners]
+        MasterDash --> Moderation[Inventory Moderation Queue]
+        Moderation --> ForceHide[Force Hide Violation Listings with Reason]
+        MasterDash --> Coupons[Create Promotional Campaign Coupons via Zod]
+    end
+
+    subgraph LogisticsAndDelivery["3. Logistics & Hyperlocal Operations"]
+        MasterDash --> AgentsList[Delivery Agent Management]
+        AgentsList --> VerifyLicense[Inspect Driving License & Verify Rider]
+        MasterDash --> LiveTracking[Monitor Active Hyperlocal Dispatches]
+    end
+
+    subgraph FinancialAuditing["4. Financial Reporting & System Config"]
+        MasterDash --> SalesReports[Platform GMV & Net Margin Metrics]
+        MasterDash --> Settlements[Audit Vendor Commission Settlements]
+        MasterDash --> AuditLogs[Inspect Tamper-Evident System Audit Trail]
+        MasterDash --> SysSettings[Global Settings: Tax Rates, Fees, Maintenance Mode]
+    end

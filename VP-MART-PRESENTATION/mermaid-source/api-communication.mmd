@@ -1,0 +1,61 @@
+flowchart LR
+    %% API Communication Diagram
+    subgraph ClientLayer["Frontend Client (React 19 / Axios)"]
+        Browser["User Browser"]
+        Axios["Axios Interceptor Layer\n• withCredentials: true\n• x-csrf-token Attachment\n• Dynamic Base URL Resolution"]
+        SocketHook["useSocket Hook\n• Real-Time Connection\n• Auto-Reconnect"]
+    end
+
+    subgraph TransportLayer["Transport & Network Protocol"]
+        HTTPSReq["HTTPS REST / JSON\n(Port 443 TLS)"]
+        WSSReq["WebSocket WSS\n(Bidirectional)"]
+    end
+
+    subgraph GatewayLayer["Express 5 Server Gateway (Render)"]
+        CORS["CORS Dynamic Origin Check\n(CLIENT_ORIGIN Multi-Whitelist)"]
+        Helmet["Helmet Security Headers\n(CSP, HSTS, X-Content-Type)"]
+        CSRF["CSRF Double-Submit Validator\n(Header vs Cookie Verification)"]
+        RateLimiter["Rate Limiting Middleware\n(Auth: 10/15m, API: 100/1m)"]
+        AuthGuard["JWT Auth Guard\n(HttpOnly Cookie Parser)"]
+        ZodGuard["Zod 4.6 Schema Parser\n(Strict Payload Validation)"]
+    end
+
+    subgraph ServiceLayer["API Routing & Controllers"]
+        AuthAPI["/api/auth/*"]
+        CatalogAPI["/api/catalog/*"]
+        CartAPI["/api/cart/*"]
+        OrderAPI["/api/orders/*"]
+        PaymentAPI["/api/payments/*"]
+        VendorAPI["/api/vendor/*"]
+        AdminAPI["/api/admin/*"]
+        DeliveryAPI["/api/delivery-agent/*"]
+        SocketServer["Socket.IO Hub\n• Room: user_:id\n• Room: vendor_:id\n• Room: delivery_agents"]
+    end
+
+    Browser --> Axios
+    Browser --> SocketHook
+
+    Axios --> HTTPSReq
+    SocketHook --> WSSReq
+
+    HTTPSReq --> CORS
+    WSSReq --> SocketServer
+
+    CORS --> Helmet
+    Helmet --> RateLimiter
+    RateLimiter --> CSRF
+    CSRF --> AuthGuard
+    AuthGuard --> ZodGuard
+
+    ZodGuard --> AuthAPI
+    ZodGuard --> CatalogAPI
+    ZodGuard --> CartAPI
+    ZodGuard --> OrderAPI
+    ZodGuard --> PaymentAPI
+    ZodGuard --> VendorAPI
+    ZodGuard --> AdminAPI
+    ZodGuard --> DeliveryAPI
+
+    OrderAPI -.->|Emit Events| SocketServer
+    PaymentAPI -.->|Emit Events| SocketServer
+    DeliveryAPI -.->|Emit Events| SocketServer

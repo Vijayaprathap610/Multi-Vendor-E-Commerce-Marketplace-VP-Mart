@@ -1,0 +1,3 @@
+# Netlify Single-Page Application (SPA) redirect rule
+# Ensures client-side React Router handles all deep links and refreshes
+/*    /index.html   200

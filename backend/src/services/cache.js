@@ -7,9 +7,46 @@ import { logger } from '../utils/logger.js';
 // uses keys scoped by user id.
 let client = null;
 let lastWarn = 0;
+let testClient = null;
+
+export class MemoryRedis {
+  constructor() {
+    this.store = new Map();
+  }
+  async get(k) {
+    return this.store.has(k) ? this.store.get(k) : null;
+  }
+  async set(k, v) {
+    this.store.set(k, String(v));
+    return 'OK';
+  }
+  async del(k) {
+    const had = this.store.has(k);
+    this.store.delete(k);
+    return had ? 1 : 0;
+  }
+  async incr(k) {
+    const val = parseInt(this.store.get(k) || '0', 10) + 1;
+    this.store.set(k, String(val));
+    return val;
+  }
+  async flushdb() {
+    this.store.clear();
+    return 'OK';
+  }
+  async quit() {
+    return 'OK';
+  }
+  disconnect() {}
+}
+
+export function setRedisForTests(c) {
+  testClient = c;
+}
 
 export function getRedis() {
-  if (!env.REDIS_URL) return null;
+  if (testClient) return testClient;
+  if (!env.REDIS_URL || !env.REDIS_URL.trim()) return null;
   if (!client) {
     client = new Redis(env.REDIS_URL, {
       maxRetriesPerRequest: 1,

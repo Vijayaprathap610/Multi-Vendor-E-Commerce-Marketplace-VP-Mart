@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    actor User as User / Client Browser
+    participant API as Express Auth Controller
+    participant SessionDB as MongoDB Session Store
+
+    Note over User, SessionDB: Phase 1: Login & Token Issuance
+    User->>API: POST /api/auth/login (email, password)
+    API->>SessionDB: Query User & Verify Bcrypt Hash (12 rounds)
+    SessionDB-->>API: User Verified
+    API->>API: Generate 15-min JWT (vp_access) & Opaque (vp_refresh)
+    API->>SessionDB: Store Session Hash in Session Collection
+    API-->>User: 200 OK + Set Cookies: vp_access (HttpOnly), vp_refresh (HttpOnly), vp_csrf (Readable)
+
+    Note over User, SessionDB: Phase 2: Double-Submit CSRF on State Mutations
+    User->>API: POST /api/orders/checkout (Cookie + Header: x-csrf-token)
+    API->>API: Validate vp_access Signature & Match x-csrf-token Header with Cookie
+    alt Authentication & CSRF Valid
+        API-->>User: 200 OK (Checkout Initiated)
+    else Access Token Expired (After 15 minutes)
+        API-->>User: 401 Unauthorized (Access Token Expired)
+    end
+
+    Note over User, SessionDB: Phase 3: Silent Refresh Token Rotation
+    User->>API: POST /api/auth/refresh (Sends vp_refresh Cookie)
+    API->>SessionDB: Lookup Active Session by Token Hash
+    alt Active Session Found
+        API->>SessionDB: Invalidate Old Refresh Token & Save New Hash
+        API->>API: Issue New 15-min Access Token & New Refresh Token
+        API-->>User: 200 OK + Set-Cookie: Rotated vp_access & vp_refresh
+    else Replay Detected (Old Token Re-used)
+        API->>SessionDB: Revoke Entire Session Family (Theft Detection)
+        API-->>User: 403 Forbidden (Compromised Session Cleared)
+    end

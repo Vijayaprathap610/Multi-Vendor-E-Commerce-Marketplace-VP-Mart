@@ -8,17 +8,85 @@ import { useSeo } from '../hooks/useSeo.js';
 import { normalizeError } from '../services/api.js';
 import { formatPaise } from '../utils/money.js';
 
+import { api } from '../services/api.js';
+
 const ISSUE_TEXT = {
   OUT_OF_STOCK: 'This item is out of stock',
   INSUFFICIENT_STOCK: 'Not enough stock for this quantity',
   UNAVAILABLE: 'This item is no longer available',
 };
 
-export function CartSummary({ totals, shipments, hasIssues }) {
+export function CartSummary({ totals, shipments, hasIssues, onCouponApplied }) {
   const inclusive = totals.taxMode !== 'exclusive';
+  const [couponCode, setCouponCode] = useState('');
+  const [couponMsg, setCouponMsg] = useState(null);
+  const [busyCoupon, setBusyCoupon] = useState(false);
+
+  const applyCoupon = async (e) => {
+    e.preventDefault();
+    if (!couponCode.trim()) return;
+    setBusyCoupon(true);
+    setCouponMsg(null);
+    try {
+      const res = await api.post('/cart/coupon', { code: couponCode.trim().toUpperCase() });
+      setCouponMsg({ type: 'success', text: `Coupon '${couponCode.trim().toUpperCase()}' applied!` });
+      setCouponCode('');
+      if (onCouponApplied) onCouponApplied();
+    } catch (err) {
+      setCouponMsg({ type: 'danger', text: normalizeError(err).message });
+    } finally {
+      setBusyCoupon(false);
+    }
+  };
+
+  const removeCoupon = async () => {
+    setBusyCoupon(true);
+    try {
+      await api.delete('/cart/coupon');
+      setCouponMsg({ type: 'info', text: 'Coupon removed' });
+      if (onCouponApplied) onCouponApplied();
+    } catch (err) {
+      setCouponMsg({ type: 'danger', text: normalizeError(err).message });
+    } finally {
+      setBusyCoupon(false);
+    }
+  };
+
   return (
     <aside className="vp-summary" aria-label="Order summary">
       <h2 className="h5">Order summary</h2>
+
+      <div className="mb-3 p-3 bg-light rounded border">
+        <Form onSubmit={applyCoupon}>
+          <Form.Label className="small font-weight-bold text-dark">Have a Coupon?</Form.Label>
+          <div className="d-flex gap-2">
+            <Form.Control
+              size="sm"
+              placeholder="e.g. SAVE10"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              disabled={busyCoupon}
+            />
+            <Button size="sm" variant="outline-dark" type="submit" disabled={busyCoupon || !couponCode.trim()}>
+              Apply
+            </Button>
+          </div>
+        </Form>
+        {couponMsg && (
+          <Alert variant={couponMsg.type} className="mt-2 py-1 px-2 small mb-0">
+            {couponMsg.text}
+          </Alert>
+        )}
+        {totals.discountPaise > 0 && (
+          <div className="mt-2 d-flex justify-content-between align-items-center">
+            <span className="badge bg-success">Coupon Applied</span>
+            <Button size="sm" variant="link" className="text-danger p-0 text-decoration-none small" onClick={removeCoupon}>
+              Remove
+            </Button>
+          </div>
+        )}
+      </div>
+
       <dl>
         <div>
           <dt>Subtotal</dt>
@@ -26,7 +94,7 @@ export function CartSummary({ totals, shipments, hasIssues }) {
         </div>
         {totals.discountPaise > 0 && (
           <div>
-            <dt>Discount</dt>
+            <dt>Coupon Discount</dt>
             <dd>−{formatPaise(totals.discountPaise, { fixed: true })}</dd>
           </div>
         )}
@@ -57,12 +125,26 @@ export function CartSummary({ totals, shipments, hasIssues }) {
           Resolve the highlighted items before checkout.
         </Alert>
       )}
-      <Button variant="dark" size="lg" className="w-100" disabled aria-describedby="checkout-note">
-        Proceed to checkout
-      </Button>
-      <p id="checkout-note" className="small text-secondary mt-2 mb-0">
-        Checkout is not available yet. Your cart is saved.
-      </p>
+      {hasIssues ? (
+        <>
+          <Button
+            variant="dark"
+            size="lg"
+            className="w-100"
+            disabled
+            aria-describedby="checkout-note"
+          >
+            Proceed to checkout
+          </Button>
+          <p id="checkout-note" className="small text-secondary mt-2 mb-0">
+            Checkout is not available yet. Your cart is saved.
+          </p>
+        </>
+      ) : (
+        <Link to="/checkout" role="button" className="btn btn-dark btn-lg w-100">
+          Proceed to checkout
+        </Link>
+      )}
     </aside>
   );
 }
