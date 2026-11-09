@@ -4,16 +4,6 @@ import { z } from 'zod';
 // Preprocess strings to trim whitespace and remove accidental quotes from .env
 const cleanStr = (v) => (typeof v === 'string' ? v.trim().replace(/^["']|["']$/g, '') : v);
 
-const bool = (def) =>
-  z
-    .preprocess((v) => {
-      if (v === undefined || v === null || v === '') return def;
-      if (typeof v === 'boolean') return v ? 'true' : 'false';
-      const s = String(v).trim().toLowerCase().replace(/^["']|["']$/g, '');
-      if (s === '1' || s === 'true' || s === 'yes') return 'true';
-      return 'false';
-    }, z.enum(['true', 'false']).default(def))
-    .transform((v) => v === 'true');
 
 const nodeEnv = z
   .preprocess((v) => {
