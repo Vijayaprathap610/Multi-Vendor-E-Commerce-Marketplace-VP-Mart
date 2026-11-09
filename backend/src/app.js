@@ -28,20 +28,28 @@ export function createApp({
     .map((o) => o.trim().replace(/\/+$/, ''))
     .filter(Boolean);
 
+  const isAllowedOrigin = (origin) => {
+    if (!origin) return true;
+    const clean = origin.replace(/\/+$/, '');
+    if (allowedOrigins.includes(clean) || allowedOrigins.includes('*')) {
+      return true;
+    }
+    // Automatically allow Netlify production and preview deploy domains (*.netlify.app)
+    if (clean.endsWith('.netlify.app')) {
+      return true;
+    }
+    // Allow localhost and local IP development
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(clean)) {
+      return true;
+    }
+    return false;
+  };
+
   app.use(helmet());
   app.use(
     cors({
       origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        const clean = origin.replace(/\/+$/, '');
-        if (allowedOrigins.includes(clean) || allowedOrigins.includes('*')) {
-          return callback(null, true);
-        }
-        // Support Netlify preview deploy subdomains if Netlify site is configured
-        if (
-          allowedOrigins.some((a) => a.includes('.netlify.app')) &&
-          clean.endsWith('.netlify.app')
-        ) {
+        if (isAllowedOrigin(origin)) {
           return callback(null, true);
         }
         return callback(new Error(`Origin ${origin} not allowed by CORS`));

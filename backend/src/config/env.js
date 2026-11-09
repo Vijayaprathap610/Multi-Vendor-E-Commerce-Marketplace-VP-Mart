@@ -35,7 +35,7 @@ const schema = z.object({
   NODE_ENV: nodeEnv,
   PORT: z.coerce.number().int().positive().default(5000),
   MONGODB_URI: z.preprocess(cleanStr, z.string().min(1)),
-  CLIENT_ORIGIN: z.preprocess(cleanStr, z.string().min(1).default('http://localhost:5173')),
+  CLIENT_ORIGIN: z.preprocess(cleanStr, z.string().min(1).default('https://flourishing-gumdrop-bab15a.netlify.app,http://localhost:5173')),
   JWT_ACCESS_SECRET: z.preprocess(cleanStr, z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters')),
   ACCESS_TOKEN_TTL_MIN: z.coerce.number().int().positive().default(15),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(7),
